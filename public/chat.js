@@ -180,6 +180,19 @@ async function sendMessage() {
             // Scroll to bottom
             chatMessages.scrollTop = chatMessages.scrollHeight;
           }
+          // If debug field is present, display it in console and optionally show to user in archive
+          if (jsonData && jsonData.debug && jsonData.debug.reason) {
+            if (DEBUG_LOGS_CLIENT) console.debug('[sendMessage] server debug reason:', jsonData.debug.reason);
+            // Optionally render a quiet note in assistant message for devs (not visible in prod)
+            // We append a faint debug note to the assistant bubble (dev only).
+            const debugNoteEl = document.createElement('small');
+            debugNoteEl.style.display = 'block';
+            debugNoteEl.style.color = '#9CA3AF';
+            debugNoteEl.style.fontSize = '12px';
+            debugNoteEl.textContent = `debug: ${jsonData.debug.reason}`;
+            assistantMessageEl.appendChild(debugNoteEl);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+          }
         } catch (e) {
           // Ignore parse errors for partial or malformed JSON; keep buffering
           if (DEBUG_LOGS_CLIENT) console.debug("[sendMessage] Ignored JSON parse error (partial chunk or malformed):", e.message, "line preview:", line.slice(0,200));

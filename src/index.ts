@@ -22,6 +22,9 @@ const SYSTEM_PROMPT =
 const SILENT_ON_FAILURE = true;
 // Toggle verbose logging
 const DEBUG_LOGS = true;
+// When true (dev only): include a debug object in the streamed response when we return
+// an empty/silent response. This helps debugging in dev but should be false in prod.
+const DEBUG_EMBED_REASON = true;
 
 // Keywords used to determine whether a user message is a horoscope-related query
 const HOROSCOPE_KEYWORDS = [
@@ -133,9 +136,10 @@ async function handleChatRequest(
     if (!isHoroscopeQuery) {
       if (SILENT_ON_FAILURE) {
         if (DEBUG_LOGS) console.log("[handleChatRequest] Non-horoscope query detected and SILENT_ON_FAILURE=true; returning empty response");
+        const debugObj = DEBUG_EMBED_REASON ? { debug: { reason: "non_horoscope" } } : {};
         const stream = new ReadableStream({
           start(controller) {
-            const payload = JSON.stringify({ response: "" }) + "\n"; // empty response
+            const payload = JSON.stringify(Object.assign({ response: "" }, debugObj)) + "\n"; // empty response
             controller.enqueue(new TextEncoder().encode(payload));
             controller.close();
           },
@@ -186,9 +190,11 @@ async function handleChatRequest(
           containsModelId,
         });
       }
+      const neededReason = !sanitizedFinal ? "sanitizedEmpty" : (!containsHangul ? "no_hangul" : "containsModelId");
+      const debugObj = DEBUG_EMBED_REASON ? { debug: { reason: neededReason } } : {};
       const stream = new ReadableStream({
         start(controller) {
-          const payload = JSON.stringify({ response: "" }) + "\n"; // empty response
+          const payload = JSON.stringify(Object.assign({ response: "" }, debugObj)) + "\n"; // empty response
           controller.enqueue(new TextEncoder().encode(payload));
           controller.close();
         },
