@@ -20,6 +20,8 @@ const SYSTEM_PROMPT =
 // If true, when the assistant validation fails or a non-horoscope question is detected,
 // the server will return an empty assistant response instead of a refusal message.
 const SILENT_ON_FAILURE = true;
+// Toggle verbose logging
+const DEBUG_LOGS = true;
 
 // Keywords used to determine whether a user message is a horoscope-related query
 const HOROSCOPE_KEYWORDS = [
@@ -92,11 +94,13 @@ async function handleChatRequest(
   env: Env,
 ): Promise<Response> {
   try {
+    if (DEBUG_LOGS) console.log("[handleChatRequest] Incoming request", request.url);
     // Parse JSON request body (messages + optional birthdate)
     const { messages = [], birthdate } = (await request.json()) as {
       messages: ChatMessage[];
       birthdate?: string | null;
     };
+    if (DEBUG_LOGS) console.log("[handleChatRequest] messages.length:", messages.length, "birthdate:", birthdate);
 
     // Add system prompt if not present
     if (!messages.some((msg) => msg.role === "system")) {
@@ -109,6 +113,7 @@ async function handleChatRequest(
       const birthContext = `사용자 생년월일: ${birthdate} (별자리: ${zodiac})`;
       // Add as a system message as additional context
       messages.unshift({ role: "system", content: birthContext });
+      if (DEBUG_LOGS) console.log("[handleChatRequest] Added birthContext to messages:", birthContext);
     }
 
     // Simple heuristic to check whether the latest user query is horoscope-related
@@ -118,11 +123,16 @@ async function handleChatRequest(
       const text = lastUserMessage.content.toLowerCase();
       return HOROSCOPE_KEYWORDS.some((kw) => text.includes(kw));
     })();
+    if (DEBUG_LOGS) {
+      console.log("[handleChatRequest] lastUserMessage:", lastUserMessage?.content);
+      console.log("[handleChatRequest] isHoroscopeQuery:", isHoroscopeQuery);
+    }
 
     // If it's not a horoscope-related question, either return a polite refusal
     // or an empty message depending on `SILENT_ON_FAILURE`.
     if (!isHoroscopeQuery) {
       if (SILENT_ON_FAILURE) {
+        if (DEBUG_LOGS) console.log("[handleChatRequest] Non-horoscope query detected and SILENT_ON_FAILURE=true; returning empty response");
         const stream = new ReadableStream({
           start(controller) {
             const payload = JSON.stringify({ response: "" }) + "\n"; // empty response
@@ -132,6 +142,7 @@ async function handleChatRequest(
         });
         return new Response(stream, { headers: { "content-type": "text/event-stream; charset=utf-8" }, });
       } else {
+        if (DEBUG_LOGS) console.log("[handleChatRequest] Non-horoscope query detected and SILENT_ON_FAILURE=false; returning polite refusal");
         const politeMsg =
           "죄송합니다. 이 챗봇은 운세 관련 질문에만 답변합니다. 운세(예: 오늘의 운세, 별자리, 사주, 궁합)와 관련된 질문을 해주세요.";
         const stream = new ReadableStream({
@@ -146,6 +157,7 @@ async function handleChatRequest(
     }
 
     // 1) Generate initial answer (non-streaming so we can validate)
+    if (DEBUG_LOGS) console.log("[handleChatRequest] Calling AI.run with model:", MODEL_ID, "messages count:", messages.length);
     const generation = await env.AI.run(MODEL_ID, {
       messages,
       max_tokens: 1024,
@@ -153,17 +165,27 @@ async function handleChatRequest(
 
     // extract text safely
     const initialText = (generation as any)?.response ?? (generation as any)?.output?.response ?? "";
+    if (DEBUG_LOGS) console.log("[handleChatRequest] initialText len:", String(initialText).length, "preview:", String(initialText).slice(0,200));
 
     // 2) Validate/Rewrite to Korean if needed using additional verifier calls
-    const finalText = await ensureKoreanAndGrammar(env, MODEL_ID, initialText);
+    const finalText = await ensureKoreanAndGrammar(env, initialText);
+    if (DEBUG_LOGS) console.log("[handleChatRequest] finalText len:", String(finalText).length, "preview:", String(finalText).slice(0,200));
 
     // Remove any accidental model ID mentions (e.g., @cf/...) before returning
     const sanitizedFinal = finalText.replace(/@cf\/[\S]+/g, '').replace(/\s{2,}/g, ' ').trim();
+    if (DEBUG_LOGS) console.log("[handleChatRequest] sanitizedFinal len:", String(sanitizedFinal).length, "preview:", String(sanitizedFinal).slice(0,200));
 
     // If sanitizedFinal is empty or still contains weird metadata patterns, obey silent mode
     const containsModelId = /@cf\/[\S]+/g.test(finalText);
     const containsHangul = /[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]/u.test(sanitizedFinal);
     if (SILENT_ON_FAILURE && (!sanitizedFinal || !containsHangul || containsModelId)) {
+      if (DEBUG_LOGS) {
+        console.log("[handleChatRequest] Preparing to return empty response due to:", {
+          sanitizedEmpty: !sanitizedFinal,
+          containsHangul,
+          containsModelId,
+        });
+      }
       const stream = new ReadableStream({
         start(controller) {
           const payload = JSON.stringify({ response: "" }) + "\n"; // empty response
@@ -214,7 +236,9 @@ async function ensureKoreanAndGrammar(
 
   // If there's no Hangul at all, we immediately request a rewrite
   let current = text;
+  if (DEBUG_LOGS) console.log('[ensureKoreanAndGrammar] starting validation, initial length:', String(current).length);
   for (let i = 0; i < maxAttempts; i++) {
+    if (DEBUG_LOGS) console.log(`[ensureKoreanAndGrammar] iteration ${i+1} current len:`, String(current).length, 'preview:', String(current).slice(0,200));
     // If it contains hangul, attempt to validate with the model (grammar and naturalness)
     const verifierSystem =
       "당신은 한국어 문법 검증자입니다. 다음 텍스트가 완전한 한국어(문법, 어순, 자연스러운 표현)인지 검사하세요. 만약 완벽하면 JSON으로 {\"status\":\"ok\", \"text\": \"원본 텍스트\"} 를 출력하세요. 만약 한국어가 아니거나 문법적 오류가 있거나 어색한 표현이 있다면, JSON으로 {\"status\":\"rewrite\", \"text\": \"수정된 한국어 텍스트\"} 를 출력하세요. 절대 다른 설명을 섞어 출력하지 마세요.";
@@ -236,6 +260,7 @@ async function ensureKoreanAndGrammar(
       max_tokens: 512,
     });
     const verificationText = (verification as any)?.response ?? "";
+    if (DEBUG_LOGS) console.log('[ensureKoreanAndGrammar] verificationText len:', String(verificationText).length, 'preview:', String(verificationText).slice(0,200));
 
     // Try to parse JSON - expected {status, text}
     let parsed: { status?: string; text?: string } | null = null;
@@ -245,17 +270,20 @@ async function ensureKoreanAndGrammar(
       // Fallback: if verificationText is just 'OK' or contains 'ok', treat as ok
       const t = verificationText.trim();
       if (/^ok$/i.test(t)) {
+        if (DEBUG_LOGS) console.log('[ensureKoreanAndGrammar] verification returned ok fallback');
         return current;
       }
     }
 
     if (parsed && parsed.status === "ok") {
       // Make sure the 'text' contains Hangul
+      if (DEBUG_LOGS) console.log('[ensureKoreanAndGrammar] parsed ok, returning parsed.text len:', String(parsed.text).length);
       return parsed.text ?? current;
     }
 
     if (parsed && parsed.status === "rewrite" && parsed.text) {
       // If the model suggests a rewrite, update current and loop again to validate the rewrite
+      if (DEBUG_LOGS) console.log('[ensureKoreanAndGrammar] parsed rewrite; updated text len:', String(parsed.text).length);
       current = parsed.text;
       if (!containsHangul(current)) {
         // If still not Korean, keep looping but this likely won't help
@@ -267,6 +295,7 @@ async function ensureKoreanAndGrammar(
 
     // If we failed to parse JSON, fallback heuristics: if verificationText contains Hangul, treat it as rewritten
     if (containsHangul(verificationText)) {
+      if (DEBUG_LOGS) console.log('[ensureKoreanAndGrammar] verificationText contains hangul; using as rewritten text');
       current = verificationText;
       continue;
     }

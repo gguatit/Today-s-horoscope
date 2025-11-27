@@ -24,6 +24,7 @@ let chatHistory = [
 ];
 let isProcessing = false;
 let userBirthdate = null; // yyyy-mm-dd string
+const DEBUG_LOGS_CLIENT = true;
 
 // Auto-resize textarea as user types
 userInput.addEventListener("input", function () {
@@ -68,6 +69,7 @@ clearBirthdateButton.addEventListener("click", () => {
  */
 function getZodiacFromDate(dateString) {
   try {
+    if (DEBUG_LOGS_CLIENT) console.debug("[sendMessage] Sending payload", { messages: chatHistory, birthdate: userBirthdate });
     const date = new Date(dateString);
     const m = date.getMonth() + 1; // 1..12
     const d = date.getDate();
@@ -159,6 +161,7 @@ async function sendMessage() {
 
       // Decode chunk
       const chunk = decoder.decode(value, { stream: true });
+      if (DEBUG_LOGS_CLIENT) console.debug("[sendMessage] Received chunk len:", chunk.length, "preview:", chunk.slice(0,200));
       bufferedLine += chunk;
 
       // Extract full lines and leave partial remainder in bufferedLine
@@ -169,6 +172,7 @@ async function sendMessage() {
         if (!line) continue; // skip empty lines
         try {
           const jsonData = JSON.parse(line);
+          if (DEBUG_LOGS_CLIENT) console.debug("[sendMessage] Parsed JSON line:", jsonData);
           if (jsonData && jsonData.response) {
             // Append new content to existing text
             responseText += jsonData.response;
@@ -178,7 +182,7 @@ async function sendMessage() {
           }
         } catch (e) {
           // Ignore parse errors for partial or malformed JSON; keep buffering
-          console.debug("Ignored JSON parse error (partial chunk or malformed):", e.message);
+          if (DEBUG_LOGS_CLIENT) console.debug("[sendMessage] Ignored JSON parse error (partial chunk or malformed):", e.message, "line preview:", line.slice(0,200));
         }
       }
     }
@@ -187,13 +191,14 @@ async function sendMessage() {
     if (bufferedLine.trim()) {
       try {
         const finalJson = JSON.parse(bufferedLine);
+        if (DEBUG_LOGS_CLIENT) console.debug("[sendMessage] finalJson:", finalJson);
         if (finalJson.response) {
           responseText += finalJson.response;
           assistantMessageEl.querySelector("p").textContent = responseText;
         }
       } catch (e) {
         // If final buffer is not valid JSON, it's safer to ignore than throw
-        console.debug("Final buffer parse failed, ignoring leftover.", e.message);
+        if (DEBUG_LOGS_CLIENT) console.debug("[sendMessage] Final buffer parse failed, ignoring leftover.", e.message, "preview:", bufferedLine.slice(0,200));
       }
     }
 
