@@ -148,6 +148,7 @@ async function sendMessage() {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let responseText = "";
+    let bufferedLine = ""; // buffer partial JSON lines between chunks
 
     while (true) {
       const { done, value } = await reader.read();
@@ -158,23 +159,41 @@ async function sendMessage() {
 
       // Decode chunk
       const chunk = decoder.decode(value, { stream: true });
+      bufferedLine += chunk;
 
-      // Process SSE format
-      const lines = chunk.split("\n");
-      for (const line of lines) {
+      // Extract full lines and leave partial remainder in bufferedLine
+      let newlineIndex;
+      while ((newlineIndex = bufferedLine.indexOf("\n")) !== -1) {
+        const line = bufferedLine.slice(0, newlineIndex).trim();
+        bufferedLine = bufferedLine.slice(newlineIndex + 1);
+        if (!line) continue; // skip empty lines
         try {
           const jsonData = JSON.parse(line);
-          if (jsonData.response) {
+          if (jsonData && jsonData.response) {
             // Append new content to existing text
             responseText += jsonData.response;
             assistantMessageEl.querySelector("p").textContent = responseText;
-
             // Scroll to bottom
             chatMessages.scrollTop = chatMessages.scrollHeight;
           }
         } catch (e) {
-          console.error("Error parsing JSON:", e);
+          // Ignore parse errors for partial or malformed JSON; keep buffering
+          console.debug("Ignored JSON parse error (partial chunk or malformed):", e.message);
         }
+      }
+    }
+
+    // If something remains in the buffer, try parse final line
+    if (bufferedLine.trim()) {
+      try {
+        const finalJson = JSON.parse(bufferedLine);
+        if (finalJson.response) {
+          responseText += finalJson.response;
+          assistantMessageEl.querySelector("p").textContent = responseText;
+        }
+      } catch (e) {
+        // If final buffer is not valid JSON, it's safer to ignore than throw
+        console.debug("Final buffer parse failed, ignoring leftover.", e.message);
       }
     }
 
