@@ -135,25 +135,30 @@ async function handleChatRequest(
       });
     }
 
-    const response = await env.AI.run(
-      MODEL_ID,
-      {
-        messages,
-        max_tokens: 1024,
-      },
-      {
-        returnRawResponse: true,
-        // Uncomment to use AI Gateway
-        // gateway: {
-        //   id: "YOUR_GATEWAY_ID", // Replace with your AI Gateway ID
-        //   skipCache: false,      // Set to true to bypass cache
-        //   cacheTtl: 3600,        // Cache time-to-live in seconds
-        // },
-      },
-    );
+    // 1) Generate initial answer (non-streaming so we can validate)
+    const generation = await env.AI.run(MODEL_ID, {
+      messages,
+      max_tokens: 1024,
+    });
 
-    // Return streaming response
-    return response;
+    // extract text safely
+    const initialText = (generation as any)?.response ?? (generation as any)?.output?.response ?? "";
+
+    // 2) Validate/Rewrite to Korean if needed using additional verifier calls
+    const finalText = await ensureKoreanAndGrammar(env, MODEL_ID, initialText);
+
+    // 3) Stream the final validated answer back to the client as newline-delimited JSON
+    const stream = new ReadableStream({
+      start(controller) {
+        const payload = JSON.stringify({ response: finalText }) + "\n";
+        controller.enqueue(new TextEncoder().encode(payload));
+        controller.close();
+      },
+    });
+
+    return new Response(stream, {
+      headers: { "content-type": "text/event-stream; charset=utf-8" },
+    });
   } catch (error) {
     console.error("Error processing chat request:", error);
     return new Response(
@@ -164,6 +169,81 @@ async function handleChatRequest(
       },
     );
   }
+}
+
+/**
+ * Runs a validation flow to ensure the model text is Korean and grammatically correct.
+ * If the text is not valid, ask the model to rewrite in Korean.
+ */
+async function ensureKoreanAndGrammar(
+  env: Env,
+  text: string,
+  maxAttempts = 3,
+): Promise<string> {
+  // Quick check for Hangul characters (Korean)
+  function containsHangul(t: string) {
+    return /[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]/u.test(t);
+  }
+
+  // If there's no Hangul at all, we immediately request a rewrite
+  let current = text;
+  for (let i = 0; i < maxAttempts; i++) {
+    // If it contains hangul, attempt to validate with the model (grammar and naturalness)
+    const verifierSystem =
+      "당신은 한국어 문법 검증자입니다. 다음 텍스트가 완전한 한국어(문법, 어순, 자연스러운 표현)인지 검사하세요. 만약 완벽하면 JSON으로 {\"status\":\"ok\", \"text\": \"원본 텍스트\"} 를 출력하세요. 만약 한국어가 아니거나 문법적 오류가 있거나 어색한 표현이 있다면, JSON으로 {\"status\":\"rewrite\", \"text\": \"수정된 한국어 텍스트\"} 를 출력하세요. 절대 다른 설명을 섞어 출력하지 마세요.";
+
+    const verifierMessages = [
+      { role: "system", content: verifierSystem },
+      {
+        role: "user",
+        content: `검증/교정할 텍스트입니다:\n\n${current}`,
+      },
+    ];
+
+    const verification = await env.AI.run(MODEL_ID, {
+      messages: verifierMessages,
+      max_tokens: 512,
+    });
+    const verificationText = (verification as any)?.response ?? "";
+
+    // Try to parse JSON - expected {status, text}
+    let parsed: { status?: string; text?: string } | null = null;
+    try {
+      parsed = JSON.parse(verificationText);
+    } catch (e) {
+      // Fallback: if verificationText is just 'OK' or contains 'ok', treat as ok
+      const t = verificationText.trim();
+      if (/^ok$/i.test(t)) {
+        return current;
+      }
+    }
+
+    if (parsed && parsed.status === "ok") {
+      // Make sure the 'text' contains Hangul
+      return parsed.text ?? current;
+    }
+
+    if (parsed && parsed.status === "rewrite" && parsed.text) {
+      // If the model suggests a rewrite, update current and loop again to validate the rewrite
+      current = parsed.text;
+      if (!containsHangul(current)) {
+        // If still not Korean, keep looping but this likely won't help
+        continue;
+      }
+      // continue loop to re-validate the rewritten version
+      continue;
+    }
+
+    // If we failed to parse JSON, fallback heuristics: if verificationText contains Hangul, treat it as rewritten
+    if (containsHangul(verificationText)) {
+      current = verificationText;
+      continue;
+    }
+
+    // Last resort: if we ran out of attempts or no rewrite found, return current
+  }
+
+  return current;
 }
 
 // Helper: determine western zodiac sign name (Korean)

@@ -111,6 +111,7 @@ async function sendMessage() {
   userInput.style.height = "auto";
 
   // Show typing indicator
+  typingIndicator.textContent = "AI가 응답을 생성하고 검증 중입니다...";
   typingIndicator.classList.add("visible");
 
   // Add message to history
