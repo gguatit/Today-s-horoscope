@@ -13,9 +13,40 @@ import { Env, ChatMessage } from "./types";
 // https://developers.cloudflare.com/workers-ai/models/
 const MODEL_ID = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
-// Default system prompt
+// Default system prompt (Korean) - make assistant behave as a horoscope-only bot
 const SYSTEM_PROMPT =
-  "You are a helpful, friendly assistant. Provide concise and accurate responses.";
+  "당신은 오직 운세 관련 질문(별자리, 오늘의 운세, 내일의 운세, 사주, 별자리 궁합 등)에만 답하는 친절한 한국어 어시스턴트입니다. 사용자가 운세와 관련 없는 질문을 하면 공손히 답변을 거부하고 운세 관련 질문을 하도록 안내하세요. 응답은 간결하고 이해하기 쉽게 한국어로 작성하세요.";
+
+// Keywords used to determine whether a user message is a horoscope-related query
+const HOROSCOPE_KEYWORDS = [
+  "운세",
+  "오늘의 운세",
+  "내일의 운세",
+  "별자리",
+  "사주",
+  "궁합",
+  "별자리 운세",
+  "별자리 오늘",
+  "띠",
+  "운명",
+  "점",
+  "타로",
+  "별점",
+  "운",
+  // Korean zodiac / western zodiac signs
+  "물병자리",
+  "물고기자리",
+  "양자리",
+  "황소자리",
+  "쌍둥이자리",
+  "게자리",
+  "사자자리",
+  "처녀자리",
+  "천칭자리",
+  "전갈자리",
+  "사수자리",
+  "염소자리",
+];
 
 export default {
   /**
@@ -65,6 +96,34 @@ async function handleChatRequest(
     // Add system prompt if not present
     if (!messages.some((msg) => msg.role === "system")) {
       messages.unshift({ role: "system", content: SYSTEM_PROMPT });
+    }
+
+    // Simple heuristic to check whether the latest user query is horoscope-related
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
+    const isHoroscopeQuery = (() => {
+      if (!lastUserMessage) return false;
+      const text = lastUserMessage.content.toLowerCase();
+      return HOROSCOPE_KEYWORDS.some((kw) => text.includes(kw));
+    })();
+
+    // If it's not a horoscope-related question, return a single streaming
+    // assistant message that politely refuses and asks for a horoscope-related question.
+    if (!isHoroscopeQuery) {
+      const politeMsg =
+        "죄송합니다. 이 챗봇은 운세 관련 질문에만 답변합니다. 운세(예: 오늘의 운세, 별자리, 사주, 궁합)와 관련된 질문을 해주세요.";
+
+      // Stream a single JSON line that the frontend understands (newline-delimited JSON)
+      const stream = new ReadableStream({
+        start(controller) {
+          const payload = JSON.stringify({ response: politeMsg }) + "\n";
+          controller.enqueue(new TextEncoder().encode(payload));
+          controller.close();
+        },
+      });
+
+      return new Response(stream, {
+        headers: { "content-type": "text/event-stream; charset=utf-8" },
+      });
     }
 
     const response = await env.AI.run(

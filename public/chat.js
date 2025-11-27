@@ -155,4 +155,20 @@ function addMessageToChat(role, content) {
 
   // Scroll to bottom
   chatMessages.scrollTop = chatMessages.scrollHeight;
+
+  // If assistant refuses due to non-horoscope question, show examples
+  if (role === "assistant" && content && content.includes("운세 관련 질문")) {
+    const suggestionsEl = document.createElement("div");
+    suggestionsEl.className = "assistant-suggestions";
+    suggestionsEl.innerHTML = `
+      <p>예시 질문:</p>
+      <ul>
+        <li>"오늘 물병자리 운세 알려줘"</li>
+        <li>"내일 사자자리 운세는 어떨까?"</li>
+        <li>"이번 주 쌍둥이자리 운세 알려줘"</li>
+      </ul>
+    `;
+    chatMessages.appendChild(suggestionsEl);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
 }
