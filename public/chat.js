@@ -13,6 +13,8 @@ const birthdateInput = document.getElementById("birthdate-input");
 const setBirthdateButton = document.getElementById("set-birthdate-button");
 const clearBirthdateButton = document.getElementById("clear-birthdate-button");
 const birthdateDisplay = document.getElementById("birthdate-display");
+const horoscopeCheckbox = document.getElementById("horoscope-checkbox");
+const horoscopeTypeSelect = document.getElementById("horoscope-type");
 
 // Chat state
 let chatHistory = [
@@ -103,6 +105,37 @@ async function sendMessage() {
     return;
   }
 
+  // Auto-detect '운세' keyword: if message contains '운세' but the checkbox is not checked,
+  // prompt user to enable the checkbox or set birthdate.
+  if (/운세/.test(message) && horoscopeCheckbox && !horoscopeCheckbox.checked) {
+    if (!userBirthdate) {
+      addMessageToChat(
+        "assistant",
+        "'운세' 요청이 감지되었습니다. 운세를 요청하려면 먼저 생년월일을 설정하고, '운세 요청'을 체크하세요.",
+      );
+      // reset and exit
+      userInput.value = "";
+      userInput.style.height = "auto";
+      isProcessing = false;
+      userInput.disabled = false;
+      sendButton.disabled = false;
+      return;
+    } else {
+      addMessageToChat(
+        "assistant",
+        "운세 요청을 위해 '운세 요청' 체크박스를 활성화합니다. 계속 진행하시려면 다시 전송하세요.",
+      );
+      // Optionally auto-check the checkbox
+      try { if (horoscopeCheckbox) horoscopeCheckbox.checked = true; } catch (e) {}
+      userInput.value = "";
+      userInput.style.height = "auto";
+      isProcessing = false;
+      userInput.disabled = false;
+      sendButton.disabled = false;
+      return;
+    }
+  }
+
   // Disable input while processing
   isProcessing = true;
   userInput.disabled = true;
@@ -120,6 +153,28 @@ async function sendMessage() {
 
   // Add message to history
   chatHistory.push({ role: "user", content: message });
+
+  // If horoscope checkbox is checked, add horoscope request
+  if (horoscopeCheckbox && horoscopeCheckbox.checked) {
+    // If birthdate not set, prompt user
+    if (!userBirthdate) {
+      addMessageToChat(
+        "assistant",
+        "운세를 요청하려면 생년월일을 먼저 설정해주세요.",
+      );
+      // reset input and UI and return
+      isProcessing = false;
+      userInput.disabled = false;
+      sendButton.disabled = false;
+      typingIndicator.classList.remove("visible");
+      return;
+    }
+
+    const type = (horoscopeTypeSelect && horoscopeTypeSelect.value) || "mixed";
+    // Insert a tag message for the model to indicate an explicit horoscope request
+    const horoscopeTag = { role: "user", content: `[운세|type:${type}]` };
+    chatHistory.push(horoscopeTag);
+  }
 
   try {
     // Create new assistant response element

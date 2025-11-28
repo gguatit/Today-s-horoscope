@@ -143,6 +143,15 @@
       <div style="margin-top:8px; padding:8px; background:#fff8e6; border-radius:6px; border:1px solid var(--border-color); font-size:0.9rem; color:var(--text-light);">
         <strong>안내:</strong> 본 챗봇은 한국어 전용입니다. 모든 응답은 한국어로 제공되며, 고유명사(인명·지명·기관·브랜드) 및 사실관계는 가능한 경우 교차검증 됩니다.
       </div>
+
+      <div id="system-instructions" style="margin-top:8px; padding:8px; background:#eef2ff; border-radius:6px; border:1px solid var(--border-color); font-size:0.9rem; color:var(--text-light);">
+        <strong>사용 방법 예시:</strong>
+        <ul style="margin-top:6px; list-style:disc; margin-left:18px;">
+          <li>생년월일을 설정한 다음, <code>오늘 운세 알려줘</code> 라고 입력하세요.</li>
+          <li>운세를 요청하려면 '운세 요청'을 체크하고 원하는 '운세 타입'을 선택하세요.</li>
+          <li>예: <code>[생년월일] 1990-01-01</code> → <code>오늘 운세 알려줘</code></li>
+        </ul>
+      </div>
     </header>
 
     <div class="chat-container">
@@ -166,6 +175,19 @@
             <button id="set-birthdate-button" style="padding:0.3rem 0.6rem; background:#4f46e5; color:white; border:none; border-radius:4px; cursor:pointer;">설정</button>
             <button id="clear-birthdate-button" style="padding:0.3rem 0.6rem; background:#9ca3af; color:white; border:none; border-radius:4px; cursor:pointer;">지우기</button>
             <div id="birthdate-display" style="margin-left:auto; font-size:0.9rem; color:var(--text-light);"></div>
+          </div>
+
+          <!-- Horoscope options -->
+          <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+            <label style="font-size:0.85rem; color:var(--text-light);">운세 옵션:</label>
+            <input id="horoscope-checkbox" type="checkbox" />
+            <label for="horoscope-checkbox" style="font-size:0.85rem; color:var(--text-light);">운세 요청</label>
+            <select id="horoscope-type" style="padding:0.3rem; border:1px solid var(--border-color); border-radius:4px;">
+              <option value="mixed">혼합(별자리 + 띠)</option>
+              <option value="zodiac">서양 별자리</option>
+              <option value="chinese">한국/중국 띠</option>
+            </select>
+            <div style="margin-left:auto; font-size:0.85rem; color:var(--text-light);">운세 요청 시 <strong>생년월일</strong>이 필요합니다.</div>
           </div>
 
           <div style="display:flex; gap:8px; align-items:center;">
