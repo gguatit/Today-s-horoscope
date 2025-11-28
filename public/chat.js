@@ -224,6 +224,17 @@ if (toolbarFocus) {
   });
 }
 
+// Controls panel toggle (small gear icon in controls bar)
+const controlsToggle = document.getElementById('controls-toggle');
+const controlsPanel = document.getElementById('controls-panel');
+if (controlsToggle && controlsPanel) {
+  controlsToggle.addEventListener('click', () => {
+    const isVisible = controlsPanel.style.display === 'flex' || controlsPanel.style.display === 'block';
+    controlsPanel.style.display = isVisible ? 'none' : 'flex';
+    controlsToggle.setAttribute('aria-expanded', String(!isVisible));
+  });
+}
+
 // Initialize target date to today
 function todayStr() {
   const d = new Date();
