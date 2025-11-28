@@ -3,11 +3,113 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Today's Horoscope (React)</title>
-    <script type="module" crossorigin src="/assets/index-_a0czMoT.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BkSqrbXr.css">
+    <title>LLM Chat App</title>
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div id="root"></div>
+    <header>
+      <h1>Cloudflare AI 채팅</h1>
+      <p>Cloudflare Workers AI로 구동됩니다</p>
+      <div style="margin-top:8px; padding:8px; background:#fff8e6; border-radius:6px; border:1px solid var(--border-color); font-size:0.9rem; color:var(--text-light);">
+        <strong>안내:</strong> 본 챗봇은 한국어 전용입니다. 모든 응답은 한국어로 제공되며, 고유명사(인명·지명·기관·브랜드) 및 사실관계는 가능한 경우 교차검증 됩니다.
+      </div>
+
+      <div id="system-instructions" style="margin-top:8px; padding:8px; background:#eef2ff; border-radius:6px; border:1px solid var(--border-color); font-size:0.9rem; color:var(--text-light);">
+        <strong>사용 방법 예시:</strong>
+        <ul style="margin-top:6px; list-style:disc; margin-left:18px;">
+          <li>생년월일을 설정한 다음, <code>오늘 운세 알려줘</code> 라고 입력하세요.</li>
+          <li>운세를 요청하려면 '운세 요청'을 체크하고 원하는 '운세 타입'을 선택하세요.</li>
+          <li>예: <code>[생년월일] 1990-01-01</code> → <code>오늘 운세 알려줘</code></li>
+        </ul>
+      </div>
+    </header>
+
+    <div class="chat-container">
+      <div id="chat-messages" class="chat-messages">
+        <div class="message assistant-message">
+          <p>
+            안녕하세요! 저는 생년월일을 기반으로 운세를 알려드리는 한국어 전용 도우미입니다. 생년월일을 입력하거나 UI에서 설정하시면 띠 기반의 오늘의 운세 및 간단한 추천 행동을 한국어로 안내해 드립니다.
+          </p>
+        </div>
+      </div>
+
+      <div class="typing-indicator" id="typing-indicator">
+        AI is thinking...
+      </div>
+
+      <div class="message-input">
+        <div style="display:flex; flex-direction:column; gap:8px; width:100%;">
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <label for="birthdate-input" style="font-size:0.85rem; color:var(--text-light);">생년월일:</label>
+            <!-- Native date input (desktop & modern mobile browsers) -->
+            <div id="birthdate-controls" style="display:inline-flex; align-items:center; gap:6px;">
+              <button id="birthdate-dec" aria-label="하루 감소" title="하루 감소" style="padding:0.25rem 0.5rem; border-radius:4px; border:1px solid var(--border-color); background:#ffffff; cursor:pointer;">−</button>
+              <input id="birthdate-input" type="date" autocomplete="bday" inputmode="numeric" style="padding:0.4rem; border:1px solid var(--border-color); border-radius:4px; min-width:140px;" />
+              <button id="birthdate-inc" aria-label="하루 증가" title="하루 증가" style="padding:0.25rem 0.5rem; border-radius:4px; border:1px solid var(--border-color); background:#ffffff; cursor:pointer;">＋</button>
+            </div>
+            <!-- Fallback selects for older mobile browsers -->
+            <div id="birthdate-selects" style="display:none; gap:6px; align-items:center;">
+              <select id="birthdate-year" style="padding:0.3rem; border:1px solid var(--border-color); border-radius:4px;">
+                <option value="">년</option>
+              </select>
+              <select id="birthdate-month" style="padding:0.3rem; border:1px solid var(--border-color); border-radius:4px;">
+                <option value="">월</option>
+              </select>
+              <select id="birthdate-day" style="padding:0.3rem; border:1px solid var(--border-color); border-radius:4px;">
+                <option value="">일</option>
+              </select>
+            </div>
+            <!-- Target date (운세 날짜) -->
+            <label for="target-date-input" style="font-size:0.85rem; color:var(--text-light); margin-left:8px;">운세 날짜:</label>
+            <div id="target-date-controls" style="display:inline-flex; align-items:center; gap:6px; margin-left:6px;">
+              <button id="target-date-dec" aria-label="하루 감소" title="하루 감소" style="padding:0.25rem 0.5rem; border-radius:4px; border:1px solid var(--border-color); background:#ffffff; cursor:pointer;">−</button>
+              <input id="target-date-input" type="date" autocomplete="bday" inputmode="numeric" style="padding:0.4rem; border:1px solid var(--border-color); border-radius:4px; min-width:140px;" />
+              <button id="target-date-inc" aria-label="하루 증가" title="하루 증가" style="padding:0.25rem 0.5rem; border-radius:4px; border:1px solid var(--border-color); background:#ffffff; cursor:pointer;">＋</button>
+            </div>
+            <div id="target-date-display" style="font-size:0.9rem; color:var(--text-light); margin-left:6px;">(운세 날짜: 오늘)</div>
+            <button id="set-birthdate-button" style="padding:0.3rem 0.6rem; background:#4f46e5; color:white; border:none; border-radius:4px; cursor:pointer;">설정</button>
+            <button id="clear-birthdate-button" style="padding:0.3rem 0.6rem; background:#9ca3af; color:white; border:none; border-radius:4px; cursor:pointer;">지우기</button>
+<!-- '오늘로 설정' 버튼은 제거되었습니다 -->
+            <div id="birthdate-display" style="margin-left:auto; font-size:0.9rem; color:var(--text-light);"></div>
+          </div>
+
+          <!-- Horoscope options -->
+          <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+            <label style="font-size:0.85rem; color:var(--text-light);">운세 옵션:</label>
+            <input id="horoscope-checkbox" type="checkbox" />
+            <label for="horoscope-checkbox" style="font-size:0.85rem; color:var(--text-light);">운세 요청</label>
+            <select id="horoscope-type" style="padding:0.3rem; border:1px solid var(--border-color); border-radius:4px;">
+              <option value="mixed">혼합(띠 기반 + 요약)</option>
+              <option value="chinese">한국/중국 띠</option>
+            </select>
+            <div style="margin-left:auto; font-size:0.85rem; color:var(--text-light);">운세 요청 시 <strong>생년월일</strong>이 필요합니다.</div>
+          </div>
+
+          <div style="display:flex; gap:8px; align-items:center;">
+            <textarea
+              id="user-input"
+              placeholder="메시지를 입력하세요... (한국어로 입력해주세요)"
+              rows="1"
+              autofocus
+              style="flex:1"
+            ></textarea>
+            <button id="send-button">전송</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>Cloudflare Workers AI Chat Template &copy; 2025</p>
+    </footer>
+
+    <!-- Chat app script -->
+    <script src="chat.js"></script>
+    <!-- Mobile-only toolbar -->
+    <div id="mobile-toolbar" class="mobile-toolbar" aria-hidden="true">
+      <button id="toolbar-dob" class="mobile-toolbar-btn" aria-label="생년월일 설정">생년월일</button>
+      <button id="toolbar-horoscope" class="mobile-toolbar-btn" aria-label="운세 요청">운세</button>
+      <button id="toolbar-focus" class="mobile-toolbar-btn" aria-label="메시지 입력으로 포커스">입력</button>
+    </div>
   </body>
-  </html>
+</html>
