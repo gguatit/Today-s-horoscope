@@ -21,6 +21,11 @@ const birthdateMonthSelect = document.getElementById("birthdate-month");
 const birthdateDaySelect = document.getElementById("birthdate-day");
 const birthdateIncButton = document.getElementById("birthdate-inc");
 const birthdateDecButton = document.getElementById("birthdate-dec");
+// Target date (운세 날짜) elements
+const targetDateInput = document.getElementById("target-date-input");
+const targetDateDisplay = document.getElementById("target-date-display");
+const targetDateInc = document.getElementById("target-date-inc");
+const targetDateDec = document.getElementById("target-date-dec");
 // '오늘로 설정' 관련 코드 제거됨
 
 // Chat state
@@ -32,6 +37,7 @@ let chatHistory = [
   },
 ];
 let userBirthdate = null; // YYYY-MM-DD
+let userTargetDate = null; // YYYY-MM-DD (date for which to compute horoscope - defaults to today)
 let isProcessing = false;
 
 // Initialize birthdate UI for mobile fallback
@@ -156,6 +162,27 @@ function initBirthdateUI() {
 // Initialize UI on load
 document.addEventListener("DOMContentLoaded", initBirthdateUI);
 
+// Initialize target date to today
+function todayStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+if (targetDateInput) {
+  const defaultToday = todayStr();
+  targetDateInput.value = defaultToday;
+  userTargetDate = defaultToday;
+  if (targetDateDisplay) targetDateDisplay.textContent = `운세 날짜: ${defaultToday}`;
+  targetDateInput.addEventListener("change", () => {
+    if (targetDateInput.value) {
+      userTargetDate = targetDateInput.value;
+      if (targetDateDisplay) targetDateDisplay.textContent = `운세 날짜: ${targetDateInput.value}`;
+    }
+  });
+}
+
 // Update display when native date input changes
 if (birthdateInput) {
   birthdateInput.addEventListener("change", () => {
@@ -253,6 +280,23 @@ if (clearBirthdateButton) {
     }
     addMessageToChat("assistant", `생년월일이 삭제되었습니다.`);
   });
+}
+
+// Set and clear target date (manual controls)
+if (targetDateDec) {
+  targetDateDec.addEventListener("click", () => addDaysToTarget(-1));
+}
+if (targetDateInc) {
+  targetDateInc.addEventListener("click", () => addDaysToTarget(1));
+}
+
+function addDaysToTarget(days) {
+  if (!targetDateInput) return;
+  const current = targetDateInput.value || userTargetDate || todayStr();
+  const next = adjustDateString(current, { days });
+  targetDateInput.value = next;
+  userTargetDate = next;
+  if (targetDateDisplay) targetDateDisplay.textContent = `운세 날짜: ${next}`;
 }
 
 // Desktop increment / decrement buttons behavior
@@ -354,6 +398,22 @@ async function sendMessage() {
 
   // Add message to history
   chatHistory.push({ role: "user", content: message });
+
+  // Ensure DOB and Target Date are in the history so the assistant can reference both
+  // Add [생년월일] if userBirthdate present and no such message exists
+  if (userBirthdate) {
+    const existingDob = chatHistory.some((m) => m.role === "user" && m.content && m.content.startsWith("[생년월일]"));
+    if (!existingDob) {
+      chatHistory.splice(1, 0, { role: "user", content: `[생년월일] ${userBirthdate}` });
+    }
+  }
+  // Add [운세날짜] target date if present and not already in history
+  if (userTargetDate) {
+    const existingTarget = chatHistory.some((m) => m.role === "user" && m.content && m.content.startsWith("[운세날짜]"));
+    if (!existingTarget) {
+      chatHistory.splice(2, 0, { role: "user", content: `[운세날짜] ${userTargetDate}` });
+    }
+  }
 
   // If horoscope checkbox is checked, add horoscope request
   if (horoscopeCheckbox && horoscopeCheckbox.checked) {

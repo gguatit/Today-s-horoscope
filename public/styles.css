@@ -176,3 +176,29 @@ footer {
     display: none !important;
   }
 }
+
+/* Target date controls styling - reuse birthdate controls styling */
+@media (min-width: 481px) {
+  #target-date-controls button {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+  }
+  #target-date-controls button:hover {
+    background: #f3f4f6;
+  }
+  #target-date-controls {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  #target-date-controls {
+    display: none !important;
+  }
+}
