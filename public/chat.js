@@ -139,9 +139,10 @@ function addDaysToInput(days) {
 }
 
 function initBirthdateUI() {
+  // Use native date pickers when available (modern mobile browsers support them);
+  // fallback to selects only if input[type=date] is not supported.
   const supported = isDateInputSupported();
-  const isSmallScreen = window && window.matchMedia && window.matchMedia('(max-width: 480px)').matches;
-  if (!supported || isSmallScreen) {
+  if (!supported) {
     // Show selects fallback
     if (birthdateSelects) birthdateSelects.style.display = "flex";
     if (birthdateInput) birthdateInput.style.display = "none";
@@ -161,6 +162,29 @@ function initBirthdateUI() {
 
 // Initialize UI on load
 document.addEventListener("DOMContentLoaded", initBirthdateUI);
+
+// Mobile UX: When input or birthdate inputs have focus, ensure the chat scrolls to bottom
+function ensureScrollToBottomLater() {
+  setTimeout(() => { if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight; }, 350);
+}
+
+if (userInput) {
+  userInput.addEventListener('focus', ensureScrollToBottomLater);
+}
+if (birthdateInput) {
+  birthdateInput.addEventListener('focus', ensureScrollToBottomLater);
+}
+if (targetDateInput) {
+  targetDateInput.addEventListener('focus', ensureScrollToBottomLater);
+}
+
+// Allow tapping the messages area to focus the input on mobile
+if (chatMessages) {
+  chatMessages.addEventListener('click', () => {
+    try { if (userInput) userInput.focus(); } catch (e) {}
+    ensureScrollToBottomLater();
+  });
+}
 
 // Initialize target date to today
 function todayStr() {

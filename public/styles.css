@@ -20,7 +20,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   line-height: 1.6;
   color: var(--text-color);
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 1rem;
 }
@@ -32,6 +32,12 @@ header {
   border-bottom: 1px solid var(--border-color);
 }
 
+/* Hide long header instruction on small screens to reduce clutter */
+@media (max-width: 480px) {
+  #system-instructions { display: none; }
+  header p { display: none; }
+}
+
 h1 {
   font-size: 1.5rem;
   color: var(--primary-color);
@@ -40,8 +46,8 @@ h1 {
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 200px);
-  min-height: 400px;
+  min-height: 60vh;
+  max-height: calc(100vh - 120px);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow: hidden;
@@ -74,12 +80,22 @@ h1 {
 
 .message-input {
   display: flex;
+  gap: 8px;
   padding: 0.75rem;
   border-top: 1px solid var(--border-color);
   background-color: white;
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  align-items: center;
 }
 
-#user-input {
+/* Support safe area insets (iOS) */
+@supports (padding: max(0px)) {
+  .message-input { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+ #user-input {
   flex: 1;
   padding: 0.75rem;
   border: 1px solid var(--border-color);
@@ -87,9 +103,10 @@ h1 {
   font-family: inherit;
   resize: none;
   min-height: 44px;
+  font-size: 16px;
 }
 
-#send-button {
+ #send-button {
   margin-left: 0.5rem;
   padding: 0 1rem;
   background-color: var(--primary-color);
@@ -128,7 +145,7 @@ footer {
 }
 
 /* Mobile optimization: stack birthdate selects & controls */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .message-input {
     padding: 0.5rem;
   }
@@ -148,6 +165,15 @@ footer {
     padding: 0.4rem 0.6rem;
     font-size: 0.85rem;
   }
+  /* Make send button bigger for touch */
+  #send-button {
+    padding: 0.6rem 0.9rem;
+    min-height: 44px;
+    font-size: 16px;
+    border-radius: 8px;
+  }
+  /* Make input larger on mobile */
+  #user-input { padding: 0.8rem; }
 }
 
 /* Desktop birthdate control styles */
@@ -172,6 +198,10 @@ footer {
 
 /* Hide inline controls on small screens, they are desktop-only */
 @media (max-width: 480px) {
+  .message { padding: 0.9rem; }
+  .message p { font-size: 16px; }
+  .assistant-message { max-width: 100%; }
+  .user-message { max-width: 100%; }
   #birthdate-controls {
     display: none !important;
   }
@@ -201,4 +231,16 @@ footer {
   #target-date-controls {
     display: none !important;
   }
+  /* Make target/birthdate inputs and selects touch friendly */
+  #target-date-input, #birthdate-input, #birthdate-selects select, #birthdate-selects select {
+    min-height: 44px;
+    padding: 0.5rem;
+    font-size: 16px;
+  }
+}
+
+/* Ensure chat messages are visible above keyboard on mobile when input focused */
+@media (max-width: 768px) {
+  .chat-container { max-height: calc(100vh - 160px); }
+  .chat-messages { padding-bottom: 120px; }
 }
