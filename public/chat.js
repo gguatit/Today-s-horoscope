@@ -15,6 +15,11 @@ const clearBirthdateButton = document.getElementById("clear-birthdate-button");
 const birthdateDisplay = document.getElementById("birthdate-display");
 const horoscopeCheckbox = document.getElementById("horoscope-checkbox");
 const horoscopeTypeSelect = document.getElementById("horoscope-type");
+const birthdateSelects = document.getElementById("birthdate-selects");
+const birthdateYearSelect = document.getElementById("birthdate-year");
+const birthdateMonthSelect = document.getElementById("birthdate-month");
+const birthdateDaySelect = document.getElementById("birthdate-day");
+const todayBirthdateButton = document.getElementById("today-birthdate-button");
 
 // Chat state
 let chatHistory = [
@@ -26,6 +31,106 @@ let chatHistory = [
 ];
 let userBirthdate = null; // YYYY-MM-DD
 let isProcessing = false;
+
+// Initialize birthdate UI for mobile fallback
+function isDateInputSupported() {
+  try {
+    const input = document.createElement("input");
+    input.setAttribute("type", "date");
+    const invalidValue = "not-a-date";
+    input.setAttribute("value", invalidValue);
+    return input.value !== invalidValue;
+  } catch (e) {
+    return false;
+  }
+}
+
+function populateBirthdateSelects() {
+  if (!birthdateYearSelect || !birthdateMonthSelect || !birthdateDaySelect) return;
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const startYear = currentYear - 100; // last 100 years
+  birthdateYearSelect.innerHTML = "<option value=''>년</option>";
+  for (let y = currentYear; y >= startYear; y--) {
+    const opt = document.createElement("option");
+    opt.value = String(y);
+    opt.textContent = String(y);
+    birthdateYearSelect.appendChild(opt);
+  }
+  birthdateMonthSelect.innerHTML = "<option value=''>월</option>";
+  for (let m = 1; m <= 12; m++) {
+    const opt = document.createElement("option");
+    opt.value = String(m);
+    opt.textContent = String(m).padStart(2, "0");
+    birthdateMonthSelect.appendChild(opt);
+  }
+  // Default days
+  updateDaysSelect();
+}
+
+function updateDaysSelect() {
+  if (!birthdateYearSelect || !birthdateMonthSelect || !birthdateDaySelect) return;
+  const y = parseInt(birthdateYearSelect.value, 10);
+  const m = parseInt(birthdateMonthSelect.value, 10);
+  let maxDays = 31;
+  if (!isNaN(m)) {
+    if ([4, 6, 9, 11].includes(m)) maxDays = 30;
+    else if (m === 2) {
+      if (!isNaN(y) && ((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0)) maxDays = 29;
+      else maxDays = 28;
+    }
+  }
+  birthdateDaySelect.innerHTML = "<option value=''>일</option>";
+  for (let d = 1; d <= maxDays; d++) {
+    const opt = document.createElement("option");
+    opt.value = String(d);
+    opt.textContent = String(d).padStart(2, "0");
+    birthdateDaySelect.appendChild(opt);
+  }
+}
+
+function updatePreviewFromSelects() {
+  if (!birthdateYearSelect || !birthdateMonthSelect || !birthdateDaySelect || !birthdateDisplay) return;
+  const y = birthdateYearSelect.value;
+  const m = birthdateMonthSelect.value;
+  const d = birthdateDaySelect.value;
+  if (y && m && d) {
+    birthdateDisplay.textContent = `생년월일: ${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  }
+}
+
+function initBirthdateUI() {
+  const supported = isDateInputSupported();
+  const isSmallScreen = window && window.matchMedia && window.matchMedia('(max-width: 480px)').matches;
+  if (!supported || isSmallScreen) {
+    // Show selects fallback
+    if (birthdateSelects) birthdateSelects.style.display = "flex";
+    if (birthdateInput) birthdateInput.style.display = "none";
+    populateBirthdateSelects();
+    // Update days when year/month change
+    if (birthdateYearSelect) birthdateYearSelect.addEventListener("change", updateDaysSelect);
+    if (birthdateMonthSelect) birthdateMonthSelect.addEventListener("change", updateDaysSelect);
+    if (birthdateYearSelect) birthdateYearSelect.addEventListener("change", updatePreviewFromSelects);
+    if (birthdateMonthSelect) birthdateMonthSelect.addEventListener("change", updatePreviewFromSelects);
+    if (birthdateDaySelect) birthdateDaySelect.addEventListener("change", updatePreviewFromSelects);
+  } else {
+    // Hide selects
+    if (birthdateSelects) birthdateSelects.style.display = "none";
+    if (birthdateInput) birthdateInput.style.display = "inline-block";
+  }
+}
+
+// Initialize UI on load
+document.addEventListener("DOMContentLoaded", initBirthdateUI);
+
+// Update display when native date input changes
+if (birthdateInput) {
+  birthdateInput.addEventListener("change", () => {
+    if (birthdateInput.value && birthdateDisplay) {
+      birthdateDisplay.textContent = `생년월일: ${birthdateInput.value}`;
+    }
+  });
+}
 
 // Auto-resize textarea as user types
 userInput.addEventListener("input", function () {
@@ -47,9 +152,35 @@ sendButton.addEventListener("click", sendMessage);
 // Birthdate buttons
 if (setBirthdateButton && birthdateInput) {
   setBirthdateButton.addEventListener("click", () => {
-    const val = birthdateInput.value;
+    // Determine date source depending on native support
+    let val = "";
+    if (birthdateInput && birthdateInput.type === "date" && birthdateInput.value) {
+      val = birthdateInput.value;
+    } else if (birthdateSelects && birthdateYearSelect && birthdateMonthSelect && birthdateDaySelect) {
+      const y = birthdateYearSelect.value;
+      const m = birthdateMonthSelect.value;
+      const d = birthdateDaySelect.value;
+      if (y && m && d) {
+        const mm = m.padStart(2, "0");
+        const dd = d.padStart(2, "0");
+        val = `${y}-${mm}-${dd}`;
+      }
+    }
     if (!val) return;
     userBirthdate = val; // YYYY-MM-DD
+    // Sync UI inputs
+    if (birthdateInput && birthdateInput.type === "date" && birthdateInput.value !== val) {
+      birthdateInput.value = val;
+    }
+    if (birthdateYearSelect && birthdateMonthSelect && birthdateDaySelect) {
+      const parts = val.split("-");
+      if (parts.length === 3) {
+        birthdateYearSelect.value = parts[0];
+        birthdateMonthSelect.value = String(parseInt(parts[1], 10));
+        updateDaysSelect();
+        birthdateDaySelect.value = String(parseInt(parts[2], 10));
+      }
+    }
 
     // Update display
     if (birthdateDisplay) birthdateDisplay.textContent = `생년월일: ${val}`;
@@ -78,6 +209,38 @@ if (clearBirthdateButton) {
       chatHistory.splice(profileIndex, 1);
     }
     addMessageToChat("assistant", `생년월일이 삭제되었습니다.`);
+  });
+}
+
+// Today quick pick
+if (todayBirthdateButton) {
+  todayBirthdateButton.addEventListener("click", () => {
+    const dt = new Date();
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, "0");
+    const d = String(dt.getDate()).padStart(2, "0");
+    const val = `${y}-${m}-${d}`;
+    userBirthdate = val;
+    if (birthdateInput && birthdateInput.type === "date") {
+      birthdateInput.value = val;
+    }
+    if (birthdateYearSelect && birthdateMonthSelect && birthdateDaySelect) {
+      birthdateYearSelect.value = String(y);
+      birthdateMonthSelect.value = String(dt.getMonth() + 1);
+      updateDaysSelect();
+      birthdateDaySelect.value = String(dt.getDate());
+      if (birthdateDisplay) birthdateDisplay.textContent = `생년월일: ${val}`;
+    }
+    // Ensure profile message is present/updated
+    const profileIndex = chatHistory.findIndex((m) => m.content && m.content.startsWith("[생년월일]"));
+    const profileMsg = { role: "user", content: `[생년월일] ${val}` };
+    if (profileIndex === -1) {
+      chatHistory.splice(1, 0, profileMsg);
+      addMessageToChat("assistant", `생년월일이 저장되었습니다: ${val}`);
+    } else {
+      chatHistory[profileIndex] = profileMsg;
+      addMessageToChat("assistant", `생년월일이 업데이트되었습니다: ${val}`);
+    }
   });
 }
 

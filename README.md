@@ -87,7 +87,8 @@ npm wrangler tail
 ```
 /
 ├── public/             # Static assets
-│   ├── index.html      # Chat UI HTML
+│   ├── index.html      # Chat UI HTML (now references `styles.css` for styling)
+│   ├── styles.css      # Extracted CSS file (moved from inlined styles in HTML)
 │   └── chat.js         # Chat UI frontend script
 ├── src/
 │   ├── index.ts        # Main Worker entry point
@@ -155,6 +156,11 @@ By default, this template now enforces a Korean-only assistant that performs gra
 - 오늘의 운세(요약) 및 추천 행동
 - 확신도(높음/보통/낮음) 및 참고/출처(가능한 경우)
 - UI에서 제공하는 '운세 요청' 체크박스를 활성화하고 '운세 타입'을 선택하면 운세 응답이 더 정확하게 생성됩니다.
+
+모바일 지원: 대부분의 모바일 브라우저는 기본 `type="date"` 입력을 지원하지만, 구형 브라우저의 경우 선택지가 불편할 수 있습니다. 이 템플릿은 모바일 최적화를 위해 다음을 제공합니다:
+
+- 작은 화면에서는 년-월-일 드롭다운(select)로 빠르게 생년월일을 선택 가능합니다.
+- '오늘로 설정' 버튼으로 즉시 오늘 날짜를 입력할 수 있습니다.
 
 추가 사용 팁:
 
