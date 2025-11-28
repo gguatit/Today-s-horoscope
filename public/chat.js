@@ -326,18 +326,14 @@ async function sendMessage() {
       sendButton.disabled = false;
       return;
     } else {
+      // Auto-enable and proceed immediately — user has birthdate set
+      try { if (horoscopeCheckbox) horoscopeCheckbox.checked = true; } catch (e) {}
+      // Brief feedback (non-blocking)
       addMessageToChat(
         "assistant",
-        "운세 요청을 위해 '운세 요청' 체크박스를 활성화합니다. 계속 진행하시려면 다시 전송하세요.",
+        "생년월일이 등록되어 있어 자동으로 운세를 요청합니다.",
       );
-      // Optionally auto-check the checkbox
-      try { if (horoscopeCheckbox) horoscopeCheckbox.checked = true; } catch (e) {}
-      userInput.value = "";
-      userInput.style.height = "auto";
-      isProcessing = false;
-      userInput.disabled = false;
-      sendButton.disabled = false;
-      return;
+      // Continue processing, do not return; the usual flow will append the tag and send
     }
   }
 
