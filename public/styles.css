@@ -18,6 +18,16 @@
   padding: 0;
 }
 
+button, input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   line-height: 1.6;
@@ -25,6 +35,9 @@ body {
   max-width: 900px;
   margin: 0 auto;
   padding: 1rem;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
   
@@ -37,8 +50,28 @@ header {
 
 /* Hide long header instruction on small screens to reduce clutter */
 @media (max-width: 480px) {
+  header {
+    margin-bottom: 1rem;
+    padding: 0.5rem 0;
+  }
+  
+  header h1 {
+    font-size: 1.25rem;
+  }
+  
   #system-instructions { display: none; }
   header p { display: none; }
+  
+  #auth-container {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  
+  .btn-small {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+  }
 }
 
 h1 {
@@ -84,6 +117,9 @@ h1 {
   overflow-y: auto;
   padding: 1rem;
   background-color: var(--light-bg);
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  will-change: scroll-position;
 }
 
 .message {
@@ -158,7 +194,13 @@ h1 {
 
 /* Support safe area insets (iOS) */
 @supports (padding: max(0px)) {
-  .message-input { padding-bottom: env(safe-area-inset-bottom); }
+  .message-input { 
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
  #user-input {
@@ -170,6 +212,14 @@ h1 {
   resize: none;
   min-height: 44px;
   font-size: 16px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#user-input:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: -1px;
+  border-color: var(--primary-color);
 }
 
  #send-button {
@@ -180,7 +230,13 @@ h1 {
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+#send-button:active {
+  transform: scale(0.98);
 }
 
 #send-button:hover {
@@ -194,9 +250,11 @@ h1 {
 
 .typing-indicator {
   display: none;
-  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
   font-style: italic;
   color: var(--text-light);
+  background-color: var(--light-bg);
+  font-size: 0.9rem;
 }
 
 .typing-indicator.visible {
@@ -214,6 +272,12 @@ footer {
 @media (max-width: 768px) {
   body {
     padding: 0.5rem;
+    padding-top: 0.25rem;
+  }
+  
+  .chat-container {
+    border-radius: 12px;
+    overflow: hidden;
   }
   
   .controls-bar {
