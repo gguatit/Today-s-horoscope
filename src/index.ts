@@ -142,19 +142,17 @@ async function handleAuthRequest(request: Request, env: Env): Promise<Response> 
         return new Response("비밀번호가 일치하지 않습니다.", { status: 401 });
       }
 
-      // Update last_login and location
-      const cf = request.cf as any;
-      const location = cf ? `${cf.country || 'Unknown'}, ${cf.city || 'Unknown'}` : 'Unknown';
-      await env.DB.prepare(
-        "UPDATE users SET last_login = CURRENT_TIMESTAMP, location = ? WHERE id = ?"
-      ).bind(location, user.id).run();
+      try {
+        // Generate JWT
+        const token = await signJWT({ sub: user.id, username: user.username, birthdate: user.birthdate });
 
-      // Generate JWT (simplified)
-      const token = await signJWT({ sub: user.id, username: user.username, birthdate: user.birthdate });
-
-      return new Response(JSON.stringify({ token, username: user.username, birthdate: user.birthdate }), {
-        headers: { "Content-Type": "application/json" }
-      });
+        return new Response(JSON.stringify({ token, username: user.username, birthdate: user.birthdate }), {
+          headers: { "Content-Type": "application/json" }
+        });
+      } catch (jwtError) {
+        console.error("JWT generation error:", jwtError);
+        return new Response("토큰 생성 중 오류가 발생했습니다.", { status: 500 });
+      }
     }
 
     return new Response("Not found", { status: 404 });
@@ -209,13 +207,18 @@ function sanitize(str: string): string {
 
 async function signJWT(payload: any): Promise<string> {
   const header = { alg: "HS256", typ: "JWT" };
-  const encodedHeader = btoa(JSON.stringify(header)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  const encodedPayload = btoa(JSON.stringify(payload)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const encodedHeader = base64UrlEncode(JSON.stringify(header));
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   
   const data = `${encodedHeader}.${encodedPayload}`;
   const signature = await hmacSha256(data, JWT_SECRET);
   
   return `${data}.${signature}`;
+}
+
+function base64UrlEncode(str: string): string {
+  const base64 = btoa(unescape(encodeURIComponent(str)));
+  return base64.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
 
 async function hmacSha256(data: string, secret: string): Promise<string> {
