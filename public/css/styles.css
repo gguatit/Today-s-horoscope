@@ -642,7 +642,10 @@ footer {
   color: var(--text-color);
   font-size: 0.85rem;
   font-weight: 500;
-  margin-left: 8px;
+}
+
+.controls-right .zodiac-info {
+  margin-right: auto;
 }
 
 .zodiac-dates-small {
