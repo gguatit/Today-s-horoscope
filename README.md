@@ -254,10 +254,10 @@ npx wrangler d1 create horoscope-db
 
 ```bash
 # Local development
-npx wrangler d1 execute horoscope-db --local --file=./schema.sql
+npx wrangler d1 execute horoscope-db --local --file=./db/schema.sql
 
 # Production
-npx wrangler d1 execute horoscope-db --remote --file=./schema.sql
+npx wrangler d1 execute horoscope-db --remote --file=./db/schema.sql
 ```
 
 6. **Run Development Server**
@@ -287,25 +287,31 @@ npm run deploy
 
 ```
 Today-s-horoscope/
-├── src/
+├── src/                      # Backend (TypeScript)
 │   ├── index.ts              # Application entry point & API routes
 │   │   ├── handleAuthRequest()    # Authentication endpoints
 │   │   ├── handleChatRequest()    # AI chat endpoint
 │   │   ├── hashPassword()         # PBKDF2 password hashing
 │   │   ├── signJWT()              # JWT token generation
+│   │   ├── verifyJWT()            # JWT token verification
 │   │   └── sanitize()             # XSS prevention utility
 │   └── types.ts              # TypeScript type definitions
 │
-├── public/
+├── public/                   # Frontend (HTML/CSS/JS)
 │   ├── index.html            # Main application view
-│   ├── chat.js               # Frontend controller & state management
-│   │   ├── Authentication UI      # Login/Signup modal handling
-│   │   ├── Chat Interface         # Message rendering & SSE handling
-│   │   ├── Date Input Controls    # Birthdate/target date management
-│   │   └── LocalStorage Manager   # Session & history persistence
-│   └── styles.css            # Application styling
+│   ├── css/
+│   │   └── styles.css        # Application styling
+│   ├── js/
+│   │   └── chat.js           # Frontend controller & state management
+│   │       ├── Authentication UI      # Login/Signup modal handling
+│   │       ├── Chat Interface         # Message rendering & SSE handling
+│   │       ├── Date Input Controls    # Birthdate/target date management
+│   │       └── LocalStorage Manager   # Session & history persistence
+│   └── assets/               # Built assets (generated)
 │
-├── schema.sql                # D1 database schema
+├── db/                       # Database (SQL)
+│   └── schema.sql            # D1 database schema
+│
 ├── wrangler.jsonc            # Cloudflare Workers configuration
 ├── tsconfig.json             # TypeScript configuration
 └── package.json              # Project dependencies & scripts
@@ -313,19 +319,24 @@ Today-s-horoscope/
 
 ### Key Files Description
 
-**`src/index.ts`**
+**`src/index.ts`** (TypeScript)
 - API 라우팅 및 요청 처리
 - JWT 인증 및 비밀번호 해싱
 - Workers AI 통합 및 스트리밍 응답
 - D1 데이터베이스 쿼리
 
-**`public/chat.js`**
+**`public/js/chat.js`** (JavaScript)
 - 인증 모달 UI 제어
 - SSE 기반 스트리밍 응답 처리
 - LocalStorage 세션 관리
 - 날짜 입력 및 검증 로직
 
-**`schema.sql`**
+**`public/css/styles.css`** (CSS)
+- 반응형 UI 스타일링
+- 모바일 최적화 (터치 인터페이스, Safe Area 지원)
+- 다크/라이트 테마 변수
+
+**`db/schema.sql`** (SQL)
 - Users 테이블 정의
 - 인덱스 및 제약조건 설정
 

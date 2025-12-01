@@ -465,3 +465,189 @@ footer {
     box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
   }
 }
+
+/* Auth Modal Styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 300px;
+  max-width: 90%;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+}
+
+#auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#auth-form input[type="text"],
+#auth-form input[type="password"] {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+#auth-form label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #666;
+  cursor: pointer;
+  margin-top: -4px;
+}
+
+#auth-form button {
+  padding: 8px;
+}
+
+#auth-message {
+  color: red;
+  font-size: 0.8rem;
+  margin-top: 10px;
+}
+
+/* Header Styles */
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#auth-container span {
+  display: none;
+  font-size: 0.9rem;
+}
+
+#logout-btn {
+  display: none;
+}
+
+.header-info {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-info-main {
+  flex: 1;
+}
+
+.header-info-main strong {
+  display: block;
+}
+
+.header-info-main small {
+  color: var(--text-light);
+}
+
+#system-instructions {
+  margin-left: 12px;
+}
+
+#system-instructions summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+#system-instructions div {
+  margin-top: 6px;
+  font-size: 0.95rem;
+  color: var(--text-light);
+}
+
+#system-instructions ul {
+  margin-top: 6px;
+  list-style: disc;
+  margin-left: 18px;
+}
+
+/* Message Input Area Styles */
+.input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.input-row label {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+.input-row label.target-date-label {
+  margin-left: 8px;
+}
+
+#birthdate-selects {
+  display: none;
+  gap: 6px;
+  align-items: center;
+}
+
+#birthdate-selects select {
+  padding: 0.3rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+#target-date-display {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  margin-left: 6px;
+}
+
+#birthdate-display {
+  margin-left: auto;
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+/* Controls Panel Styles */
+.controls-panel-label {
+  display: flex;
+  align-items: center;
+}
+
+.controls-panel-info {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+.textarea-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.textarea-row textarea {
+  flex: 1;
+}
