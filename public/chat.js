@@ -39,7 +39,7 @@ const authTitle = document.getElementById("auth-title");
 const authForm = document.getElementById("auth-form");
 const authUsernameInput = document.getElementById("auth-username");
 const authPasswordInput = document.getElementById("auth-password");
-const togglePasswordBtn = document.getElementById("toggle-password");
+const togglePasswordCheck = document.getElementById("toggle-password-check");
 const authBirthdateInput = document.getElementById("auth-birthdate");
 const authCancelBtn = document.getElementById("auth-cancel");
 const authMessage = document.getElementById("auth-message");
@@ -47,11 +47,9 @@ const authMessage = document.getElementById("auth-message");
 let authToken = localStorage.getItem("authToken");
 let authUser = localStorage.getItem("authUser");
 
-if (togglePasswordBtn) {
-  togglePasswordBtn.addEventListener("click", () => {
-    const type = authPasswordInput.getAttribute("type") === "password" ? "text" : "password";
-    authPasswordInput.setAttribute("type", type);
-    togglePasswordBtn.textContent = type === "password" ? "👁️" : "🙈";
+if (togglePasswordCheck) {
+  togglePasswordCheck.addEventListener("change", () => {
+    authPasswordInput.setAttribute("type", togglePasswordCheck.checked ? "text" : "password");
   });
 }
 
