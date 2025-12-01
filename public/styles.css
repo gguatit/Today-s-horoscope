@@ -68,14 +68,15 @@ h1 {
   border-bottom: 1px solid var(--border-color);
   background: var(--control-bg);
   box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+  flex-wrap: wrap;
 }
-.controls-left, .controls-middle, .controls-right { display:flex; gap:8px; align-items:center; }
-.controls-left label, .controls-middle label { font-size:0.9rem; color:var(--text-light); }
-.controls-left input, .controls-middle input, .controls-panel select { padding:0.35rem 0.5rem; border:1px solid var(--control-border); border-radius:6px; }
-.controls-right .btn-primary { background:var(--primary-color); color:white; border:none; padding:0.4rem 0.6rem; border-radius:6px; cursor:pointer; }
-.controls-right .btn-muted { background:var(--text-light); color:white; border:none; padding:0.35rem 0.5rem; border-radius:6px; cursor:pointer; }
-.controls-right .btn-icon { background:transparent; border:none; font-size:18px; cursor:pointer; }
-.controls-panel { display:flex; gap:8px; align-items:center; padding:8px; border-top:1px dashed #eee; }
+.controls-left, .controls-middle, .controls-right { display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
+.controls-left label, .controls-middle label { font-size:0.9rem; color:var(--text-light); white-space: nowrap; }
+.controls-left input, .controls-middle input, .controls-panel select { padding:0.35rem 0.5rem; border:1px solid var(--control-border); border-radius:6px; min-height: 36px; }
+.controls-right .btn-primary { background:var(--primary-color); color:white; border:none; padding:0.4rem 0.6rem; border-radius:6px; cursor:pointer; min-height: 36px; }
+.controls-right .btn-muted { background:var(--text-light); color:white; border:none; padding:0.35rem 0.5rem; border-radius:6px; cursor:pointer; min-height: 36px; }
+.controls-right .btn-icon { background:transparent; border:none; font-size:18px; cursor:pointer; min-height: 36px; }
+.controls-panel { display:flex; gap:8px; align-items:center; padding:8px; border-top:1px dashed #eee; flex-wrap: wrap; }
 .control-inline { display:inline-flex; gap:6px; align-items:center; font-size:0.9rem; color:var(--text-light); }
 
 .chat-messages {
@@ -211,34 +212,68 @@ footer {
 
 /* Mobile optimization: stack birthdate selects & controls */
 @media (max-width: 768px) {
-  .message-input {
+  body {
     padding: 0.5rem;
   }
+  
+  .controls-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px;
+  }
+  
+  .controls-left, .controls-middle, .controls-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .controls-left input,
+  .controls-middle input {
+    flex: 1;
+    min-width: 100px;
+  }
+  
+  .message-input {
+    padding: 0.5rem;
+    gap: 6px;
+  }
+  
   #birthdate-selects {
     display: flex !important;
     flex-wrap: wrap;
     gap: 6px;
   }
+  
   #birthdate-selects select {
     min-width: 64px;
+    min-height: 44px;
   }
+  
   #birthdate-input {
     min-width: 120px;
+    min-height: 44px;
   }
-  /* removed #today-birthdate-button styles as the button is deleted */
+  
   #set-birthdate-button, #clear-birthdate-button {
-    padding: 0.4rem 0.6rem;
-    font-size: 0.85rem;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.9rem;
+    min-height: 44px;
   }
+  
   /* Make send button bigger for touch */
   #send-button {
-    padding: 0.6rem 0.9rem;
-    min-height: 44px;
+    padding: 0.75rem 1rem;
+    min-height: 48px;
     font-size: 16px;
     border-radius: 8px;
   }
+  
   /* Make input larger on mobile */
-  #user-input { padding: 0.8rem; }
+  #user-input { 
+    padding: 0.8rem;
+    min-height: 48px;
+  }
 }
 
 /* Desktop birthdate control styles */
@@ -263,12 +298,28 @@ footer {
 
 /* Hide inline controls on small screens, they are desktop-only */
 @media (max-width: 480px) {
-  .message { padding: 0.9rem; }
+  .message { 
+    padding: 0.9rem;
+    padding-left: 40px;
+    max-width: 100%;
+  }
+  
   .message p { font-size: 16px; }
   .assistant-message { max-width: 100%; }
   .user-message { max-width: 100%; }
+  
   #birthdate-controls {
     display: none !important;
+  }
+  
+  /* 아바타 크기 조정 */
+  .user-message::before,
+  .assistant-message::before {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+    left: 8px;
+    top: 10px;
   }
 }
 
@@ -296,47 +347,57 @@ footer {
   #target-date-controls {
     display: none !important;
   }
+  
   /* Make target/birthdate inputs and selects touch friendly */
-  #target-date-input, #birthdate-input, #birthdate-selects select, #birthdate-selects select {
+  #target-date-input, 
+  #birthdate-input, 
+  #birthdate-selects select {
     min-height: 44px;
-    padding: 0.5rem;
+    padding: 0.6rem 0.5rem;
+    font-size: 16px;
+    border-radius: 6px;
+  }
+  
+  /* 버튼 터치 영역 확대 */
+  #birthdate-inc,
+  #birthdate-dec,
+  #target-date-inc,
+  #target-date-dec,
+  #target-date-today {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.6rem;
     font-size: 16px;
   }
 }
 
 /* Ensure chat messages are visible above keyboard on mobile when input focused */
 @media (max-width: 768px) {
-  .chat-container { max-height: calc(100vh - 160px); }
-  .chat-messages { padding-bottom: 120px; }
+  .chat-container { 
+    max-height: calc(100vh - 200px);
+    min-height: 50vh;
+  }
+  
+  .chat-messages { 
+    padding-bottom: 20px;
+    padding-top: 0.5rem;
+  }
 }
 
 /* Mobile toolbar styles */
 @media (max-width: 768px) {
   .mobile-toolbar {
-    display: flex;
-    justify-content: space-around;
-    gap: 8px;
-    align-items: center;
-    position: fixed;
-    left: 8px;
-    right: 8px;
-    bottom: 64px; /* sit above the message-input */
-    z-index: 25;
-    background: rgba(255,255,255,0.98);
-    border-radius: 12px;
-    padding: 6px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-    border: 1px solid var(--border-color);
+    display: none; /* 모바일에서는 controls-bar로 통합 */
   }
-  .mobile-toolbar-btn {
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 14px;
-    cursor: pointer;
-    min-width: 64px;
+  
+  /* 메시지 입력 영역이 화면 하단에 고정되도록 */
+  .message-input {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    background: white;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
   }
-  .mobile-toolbar-btn:active { transform: translateY(1px); }
 }
