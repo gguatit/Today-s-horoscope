@@ -26,6 +26,7 @@ const targetDateInput = document.getElementById("target-date-input");
 const targetDateDisplay = document.getElementById("target-date-display");
 const targetDateInc = document.getElementById("target-date-inc");
 const targetDateDec = document.getElementById("target-date-dec");
+const targetDateToday = document.getElementById("target-date-today");
 // '오늘로 설정' 관련 코드 제거됨
 
 // Chat state
@@ -415,6 +416,15 @@ if (targetDateDec) {
 }
 if (targetDateInc) {
   targetDateInc.addEventListener("click", () => addDaysToTarget(1));
+}
+
+if (targetDateToday) {
+  targetDateToday.addEventListener("click", () => {
+    const today = todayStr();
+    if (targetDateInput) targetDateInput.value = today;
+    userTargetDate = today;
+    if (targetDateDisplay) targetDateDisplay.textContent = `운세 날짜: ${today}`;
+  });
 }
 
 function addDaysToTarget(days) {
