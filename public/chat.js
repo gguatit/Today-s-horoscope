@@ -40,6 +40,55 @@ let userBirthdate = null; // YYYY-MM-DD
 let userTargetDate = null; // YYYY-MM-DD (date for which to compute horoscope - defaults to today)
 let isProcessing = false;
 
+// Load history from local storage
+function loadHistory() {
+  const saved = localStorage.getItem("chatHistory");
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        chatHistory = parsed;
+        // Rebuild UI
+        chatMessages.innerHTML = "";
+        chatHistory.forEach(msg => {
+          if (msg.role !== "system" && !msg.content.startsWith("[운세|") && !msg.content.startsWith("[생년월일]") && !msg.content.startsWith("[운세날짜]")) {
+             addMessageToChat(msg.role, msg.content);
+          }
+        });
+        // Add initial message if empty
+        if (chatMessages.children.length === 0) {
+             addMessageToChat("assistant", "안녕하세요! 저는 생년월일을 기반으로 운세를 알려드리는 한국어 전용 도우미입니다. 생년월일을 입력하거나 UI에서 설정하시면 띠 기반의 오늘의 운세 및 간단한 추천 행동을 한국어로 안내해 드립니다.");
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load history", e);
+    }
+  }
+  
+  const savedBirthdate = localStorage.getItem("userBirthdate");
+  if (savedBirthdate) {
+    userBirthdate = savedBirthdate;
+    if (birthdateDisplay) birthdateDisplay.textContent = `생년월일: ${userBirthdate}`;
+    if (birthdateInput) birthdateInput.value = userBirthdate;
+    // Sync selects
+    if (birthdateYearSelect && birthdateMonthSelect && birthdateDaySelect) {
+      const parts = userBirthdate.split("-");
+      if (parts.length === 3) {
+        birthdateYearSelect.value = parts[0];
+        birthdateMonthSelect.value = String(parseInt(parts[1], 10));
+        updateDaysSelect();
+        birthdateDaySelect.value = String(parseInt(parts[2], 10));
+      }
+    }
+  }
+}
+
+function saveHistory() {
+  localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+  if (userBirthdate) localStorage.setItem("userBirthdate", userBirthdate);
+  else localStorage.removeItem("userBirthdate");
+}
+
 // Initialize birthdate UI for mobile fallback
 function isDateInputSupported() {
   try {
@@ -161,7 +210,10 @@ function initBirthdateUI() {
 }
 
 // Initialize UI on load
-document.addEventListener("DOMContentLoaded", initBirthdateUI);
+document.addEventListener("DOMContentLoaded", () => {
+  initBirthdateUI();
+  loadHistory();
+});
 
 // Mobile UX: When input or birthdate inputs have focus, ensure the chat scrolls to bottom
 function ensureScrollToBottomLater() {
@@ -339,6 +391,7 @@ if (setBirthdateButton && birthdateInput) {
       chatHistory[profileIndex] = profileMsg;
       addMessageToChat("assistant", `생년월일이 업데이트되었습니다: ${val}`);
     }
+    saveHistory();
   });
 }
 
@@ -352,6 +405,7 @@ if (clearBirthdateButton) {
       chatHistory.splice(profileIndex, 1);
     }
     addMessageToChat("assistant", `생년월일이 삭제되었습니다.`);
+    saveHistory();
   });
 }
 
@@ -471,6 +525,7 @@ async function sendMessage() {
 
   // Add message to history
   chatHistory.push({ role: "user", content: message });
+  saveHistory();
 
   // Ensure DOB and Target Date are in the history so the assistant can reference both
   // Add [생년월일] if userBirthdate present and no such message exists
@@ -558,8 +613,15 @@ async function sendMessage() {
       // Process SSE format
       const lines = chunk.split("\n");
       for (const line of lines) {
+        if (!line.trim()) continue;
+        let jsonStr = line;
+        if (line.startsWith("data: ")) {
+          jsonStr = line.slice(6);
+        }
+        if (jsonStr.trim() === "[DONE]") continue;
+
         try {
-          const jsonData = JSON.parse(line);
+          const jsonData = JSON.parse(jsonStr);
           if (jsonData.response) {
             // Append new content to existing text
             responseText += jsonData.response;
@@ -569,10 +631,13 @@ async function sendMessage() {
             chatMessages.scrollTop = chatMessages.scrollHeight;
           }
         } catch (e) {
-          console.error("Error parsing JSON:", e);
+          // console.error("Error parsing JSON:", e);
         }
       }
     }
+
+    chatHistory.push({ role: "assistant", content: responseText });
+    saveHistory();
 
     // If response contains forbidden scripts (e.g., 한자/일본어/라틴/키릴), request a rewrite once
     if (containsForbiddenScript(responseText) && !sanitizedOnce) {

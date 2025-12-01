@@ -21,7 +21,7 @@ const SYSTEM_PROMPT = `당신은 한국어만 사용해야 하는 문법·표기
 2) 입력 텍스트에 대해 문법, 맞춤법, 띄어쓰기, 어휘 및 문체(격식 수준)를 점검하고 가능한 교정안을 제시하십시오.
 3) 문장 내 고유명사(인명, 지명, 기관명, 제품/브랜드 등)를 교차검증하고 공식 표기/권장 표기(로마자 표기 포함)와 사실관계(예: 직책/소속)가 정확한지 확인하십시오.
 4) 각 변경 제안은 적당한 길이의 형식로 제공하십시오: 원문 -> 수정안 : 변경 사유 : 참고출처(가능 시) : 확신도(높음/보통/낮음).
-5) 외부 검색이 가능하면 신뢰할 수 있는 출처(공식 웹사이트, 표준국어대사전, 주요 언론 등)를 우선 활용하고, 불가능하면 '검증 불가(내부 지식 기반)'로 명시하십시오.
+5) 외부 검색이 가능하면 신뢰할 수 있는 출처(공식 웹사이트준국어대사전, 주요 언론 등)를 우선 활용하고, 불가능하면 '검증 불가(내부 지식 기반)'로 명시하십시오.
 6) 사용자들이 운세를 쉽게 이해 가능하도록 직관적으로 운세를 출력해주고 한자 등등의 다른 언어들은 사용하지 말고 대답하십시오.
 7) 운세를 출력할 때, 사용자가 제공하지 않았거나 검증할 수 없는 날짜·요일·띠(예: "당신의 생년월일인 2008년 3월 1일을 기준으로, 2025년 11월 28일은 [수]요일입니다" 또는 "당신의 띠는 [소]띠입니다")와 같은 사실은 절대 생성하지 마십시오. 이러한 정보는 사용자가 명시적으로 제공했거나, 신뢰 가능한 출처로 검증 가능한 경우에만 포함할 수 있습니다.
 8) 사용자가 운세를 요청하거나 생년월일을 제공할 때, 결과는 항상 가장 먼저 다음 형식의 문장으로 시작해야 합니다: "오늘 당신의 운세는 <한 줄 요약> 입니다." 그 외 추가 설명(추천 행동 등)은 한두 문장으로 간결하게 덧붙일 수 있으나, 날짜·요일·띠 관련 정보를 포함하지 마십시오. (필요 시 신뢰도/출처를 함께 명시)
@@ -107,45 +107,7 @@ async function handleChatRequest(
       },
     );
 
-    // Read response body so we can inspect for forbidden patterns (요일/띠/생년월일)
-    const responseText = await response.text();
-
-    // Define forbidden patterns that should never be generated unless explicitly provided and verified
-    const forbiddenPatterns = [
-      "요일",
-      "띠",
-      "생년월일",
-      "당신의 생년월일",
-      "를 기준으로",
-      "제 생년월일",
-      "저의 생년월일",
-      "제 생일",
-      "저의 생일",
-      "당신의 띠",
-      "나의 띠",
-      "내 띠",
-    ];
-    const containsForbidden = forbiddenPatterns.some((p) => responseText.includes(p));
-
-    if (containsForbidden) {
-      // Re-run a quick rewrite to enforce the required '오늘 당신의 운세는 <요약>' format
-      const rewriteInstruction = `다음 텍스트에는 날짜·요일·띠와 같은 검증되지 않은 정보가 포함되어 있을 수 있습니다. 해당 텍스트에서 운세 핵심 요약만을 추출하여, 한 문장으로 "오늘 당신의 운세는 <한 줄 요약> 입니다." 형태로 재작성해주십시오. 절대 날짜·요일·띠 관련 문장을 포함하거나 생성하지 마십시오. 원문: "${responseText.replaceAll('"', '\\"')}"`;
-
-      const rewriteMessages = [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: rewriteInstruction },
-      ];
-
-      const rewrittenResponse = await env.AI.run(MODEL_ID, {
-        messages: rewriteMessages,
-        max_tokens: 200,
-      }, { returnRawResponse: true });
-
-      return rewrittenResponse;
-    }
-
-    // Otherwise return original streaming response (keep status and headers)
-    return new Response(responseText, { status: response.status, headers: response.headers });
+    return response;
   } catch (error) {
     console.error("Error processing chat request:", error);
     return new Response(
