@@ -27,6 +27,10 @@ const targetDateDisplay = document.getElementById("target-date-display");
 const targetDateInc = document.getElementById("target-date-inc");
 const targetDateDec = document.getElementById("target-date-dec");
 const targetDateToday = document.getElementById("target-date-today");
+// Zodiac display elements
+const zodiacDisplay = document.getElementById("zodiac-display");
+const zodiacSign = document.getElementById("zodiac-sign");
+const zodiacDates = document.getElementById("zodiac-dates");
 // '오늘로 설정' 관련 코드 제거됨
 
 // Auth elements
@@ -151,6 +155,7 @@ authForm.addEventListener("submit", async (e) => {
           localStorage.setItem("userBirthdate", userBirthdate);
           if (birthdateDisplay) birthdateDisplay.textContent = `생년월일: ${userBirthdate}`;
           if (birthdateInput) birthdateInput.value = unformatBirthdate(userBirthdate);
+          updateZodiacDisplay(userBirthdate);
         }
         
         updateAuthUI();
@@ -230,6 +235,7 @@ function loadHistory() {
     userBirthdate = savedBirthdate;
     if (birthdateDisplay) birthdateDisplay.textContent = `생년월일: ${userBirthdate}`;
     if (birthdateInput) birthdateInput.value = unformatBirthdate(userBirthdate);
+    updateZodiacDisplay(userBirthdate);
   }
 }
 
@@ -276,6 +282,71 @@ function formatBirthdate(val) {
 function unformatBirthdate(val) {
   if (!val) return "";
   return val.replace(/-/g, "");
+}
+
+// 12 Zodiac Signs data (matching backend)
+const ZODIAC_SIGNS = [
+  { name: "양자리", nameEn: "Aries", start: "0321", end: "0419", icon: "♈" },
+  { name: "황소자리", nameEn: "Taurus", start: "0420", end: "0520", icon: "♉" },
+  { name: "쌍둥이자리", nameEn: "Gemini", start: "0521", end: "0621", icon: "♊" },
+  { name: "게자리", nameEn: "Cancer", start: "0622", end: "0722", icon: "♋" },
+  { name: "사자자리", nameEn: "Leo", start: "0723", end: "0822", icon: "♌" },
+  { name: "처녀자리", nameEn: "Virgo", start: "0823", end: "0923", icon: "♍" },
+  { name: "천칭자리", nameEn: "Libra", start: "0924", end: "1022", icon: "♎" },
+  { name: "전갈자리", nameEn: "Scorpio", start: "1023", end: "1122", icon: "♏" },
+  { name: "사수자리", nameEn: "Sagittarius", start: "1123", end: "1221", icon: "♐" },
+  { name: "염소자리", nameEn: "Capricorn", start: "1222", end: "0119", icon: "♑" },
+  { name: "물병자리", nameEn: "Aquarius", start: "0120", end: "0218", icon: "♒" },
+  { name: "물고기자리", nameEn: "Pisces", start: "0219", end: "0320", icon: "♓" }
+];
+
+/**
+ * Calculate zodiac sign from birthdate (YYYY-MM-DD format)
+ * @param {string} birthdate - Date string in YYYY-MM-DD format
+ * @returns {object|null} Zodiac sign object or null
+ */
+function calculateZodiacSign(birthdate) {
+  if (!birthdate || birthdate.length !== 10) return null;
+  
+  // Extract month and day as MMDD string
+  const mmdd = birthdate.substring(5).replace("-", ""); // "03-21" -> "0321"
+  
+  // Find matching zodiac sign
+  for (const sign of ZODIAC_SIGNS) {
+    // Handle year-boundary case (Capricorn: 12/22 - 01/19)
+    if (sign.start > sign.end) {
+      // Spans year boundary
+      if (mmdd >= sign.start || mmdd <= sign.end) {
+        return sign;
+      }
+    } else {
+      // Normal range within same year
+      if (mmdd >= sign.start && mmdd <= sign.end) {
+        return sign;
+      }
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Update zodiac display UI
+ * @param {string} birthdate - YYYY-MM-DD format
+ */
+function updateZodiacDisplay(birthdate) {
+  if (!zodiacDisplay || !zodiacSign || !zodiacDates) return;
+  
+  const zodiac = calculateZodiacSign(birthdate);
+  if (zodiac) {
+    zodiacDisplay.style.display = "flex";
+    const iconSpan = zodiacDisplay.querySelector('.zodiac-icon');
+    if (iconSpan) iconSpan.textContent = zodiac.icon;
+    zodiacSign.textContent = `${zodiac.name} (${zodiac.nameEn})`;
+    zodiacDates.textContent = `${zodiac.start.substring(0,2)}/${zodiac.start.substring(2)} - ${zodiac.end.substring(0,2)}/${zodiac.end.substring(2)}`;
+  } else {
+    zodiacDisplay.style.display = "none";
+  }
 }
 
 // add or subtract days/months/years from a date string YYYY-MM-DD
@@ -475,6 +546,9 @@ if (setBirthdateButton && birthdateInput) {
     
     // Update display
     if (birthdateDisplay) birthdateDisplay.textContent = `생년월일: ${val}`;
+    
+    // Update zodiac display
+    updateZodiacDisplay(val);
 
     // Add or replace profile entry in chat history
     const profileIndex = chatHistory.findIndex((m) => m.content && m.content.startsWith("[생년월일]"));
@@ -495,6 +569,7 @@ if (clearBirthdateButton) {
   clearBirthdateButton.addEventListener("click", () => {
     userBirthdate = null;
     if (birthdateDisplay) birthdateDisplay.textContent = "";
+    if (zodiacDisplay) zodiacDisplay.style.display = "none";
     // Remove profile from chat history
     const profileIndex = chatHistory.findIndex((m) => m.content && m.content.startsWith("[생년월일]"));
     if (profileIndex !== -1) {

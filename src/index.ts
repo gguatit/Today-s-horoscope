@@ -7,7 +7,7 @@
  *
  * @license MIT
  */
-import { Env, ChatMessage } from "./types";
+import { Env, ChatMessage, ZODIAC_SIGNS, ZodiacSign } from "./types";
 
 // Model ID for Workers AI model
 // https://developers.cloudflare.com/workers-ai/models/
@@ -29,7 +29,8 @@ const SYSTEM_PROMPT = `당신은 한국어만 사용해야 하는 문법·표기
 10) 운세를 보여줄 시 텍스트를 너무 길게 생성하지 않습니다 중간 정도의 길이로 생성합니다.
 11) 사실관계가 불일치하거나 불확실한 경우, 가능한 수정안과 함께 '확인 필요'로 표시해 사용자에게 후속 질문을 유도하십시오.
 12) 운세 내용은 항상 긍정적일 필요는 없습니다. 약 10~30%의 확률로 '오늘은 자중해야 하는 날', '언행을 조심해야 하는 날'과 같이 주의를 요하거나 다소 부정적인 흐름의 운세도 생성하십시오. 다만, 부정적인 운세일 경우에도 단순히 겁을 주기보다는 대비할 수 있는 현실적인 조언을 함께 제공하십시오.
-13) 운세의 내용은 구체적이고 창의적으로 작성하되, 맹목적인 믿음보다는 실질적인 조언과 마음가짐에 초점을 맞추십시오.`;
+13) 운세의 내용은 구체적이고 창의적으로 작성하되, 맹목적인 믿음보다는 실질적인 조언과 마음가짐에 초점을 맞추십시오.
+14) 사용자의 생년월일을 기반으로 서양 별자리(12궁)가 제공된 경우, 해당 별자리의 특성을 운세에 자연스럽게 반영하십시오. 별자리 정보는 "당신의 별자리는 [별자리명]입니다."와 같은 형식으로 언급하고, 각 별자리의 고유한 특성(에너지, 안정, 커뮤니케이션, 감성, 리더십, 분석력, 협력, 통찰, 확장, 목표달성, 혁신, 직관 등)을 운세 해석에 통합하십시오.`;
 // 추가 규칙: 운세 기능
 // - 사용자가 생년월일(생년-월-일, YYYY-MM-DD 형식)을 제공하거나 "운세"를 요청하면,
 //   해당 생년월일과 함께 사용자가 제공한 '운세 날짜'(YYYY-MM-DD 형식)를 기준으로 운세를 계산하십시오. (운세 날짜를 따로 제공하지 않으면 '오늘'을 기준으로 계산)
@@ -271,6 +272,36 @@ async function verifyJWT(token: string): Promise<any | null> {
 }
 
 /**
+ * Calculate zodiac sign from birthdate (YYYY-MM-DD format)
+ * @param birthdate - Date string in YYYY-MM-DD format
+ * @returns ZodiacSign object or null if invalid
+ */
+function calculateZodiacSign(birthdate: string): ZodiacSign | null {
+  if (!birthdate || birthdate.length !== 10) return null;
+  
+  // Extract month and day as MMDD string
+  const mmdd = birthdate.substring(5).replace("-", ""); // "03-21" -> "0321"
+  
+  // Find matching zodiac sign
+  for (const sign of ZODIAC_SIGNS) {
+    // Handle year-boundary case (Capricorn: 12/22 - 01/19)
+    if (sign.start > sign.end) {
+      // Spans year boundary
+      if (mmdd >= sign.start || mmdd <= sign.end) {
+        return sign;
+      }
+    } else {
+      // Normal range within same year
+      if (mmdd >= sign.start && mmdd <= sign.end) {
+        return sign;
+      }
+    }
+  }
+  
+  return null;
+}
+
+/**
  * Handles chat API requests and streams responses
  */
 async function handleChatRequest(
@@ -304,8 +335,20 @@ async function handleChatRequest(
     // Enforce our system prompt at the start of the conversation and remove other system messages
     // This guarantees the assistant follows our Korean-only + verification rules
     const nonSystem = messages.filter((msg) => msg.role !== "system");
+    
+    // Extract birthdate from chat history and calculate zodiac sign
+    let zodiacInfo = "";
+    const birthdateMsg = nonSystem.find((m) => m.content && m.content.startsWith("[생년월일]"));
+    if (birthdateMsg) {
+      const birthdate = birthdateMsg.content.replace("[생년월일]", "").trim();
+      const zodiac = calculateZodiacSign(birthdate);
+      if (zodiac) {
+        zodiacInfo = `\n\n[별자리 정보] 사용자의 별자리: ${zodiac.name} (${zodiac.nameEn}, ${zodiac.start.substring(0,2)}/${zodiac.start.substring(2)} - ${zodiac.end.substring(0,2)}/${zodiac.end.substring(2)}). 특성: ${zodiac.traits}`;
+      }
+    }
+    
     const enforcedMessages = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: SYSTEM_PROMPT + zodiacInfo },
       ...nonSystem,
     ];
 
