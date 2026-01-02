@@ -292,27 +292,33 @@ Today-s-horoscope/
 ├── src/                      # Backend (TypeScript)
 │   ├── index.ts              # Application entry point & API routes
 │   │   ├── handleAuthRequest()    # Authentication endpoints
-│   │   ├── handleChatRequest()    # AI chat endpoint
+│   │   ├── handleChatRequest()    # AI chat endpoint with SSE streaming
 │   │   ├── hashPassword()         # PBKDF2 password hashing
 │   │   ├── signJWT()              # JWT token generation
 │   │   ├── verifyJWT()            # JWT token verification
 │   │   └── sanitize()             # XSS prevention utility
 │   └── types.ts              # TypeScript type definitions
+│       ├── ChatMessage            # Chat message interface
+│       ├── ZodiacSign             # 12별자리 데이터 구조
+│       └── ZODIAC_SIGNS           # 12별자리 상수 배열
 │
-├── public/                   # Frontend (HTML/CSS/JS)
+├── public/                   # Frontend (Static Assets)
 │   ├── index.html            # Main application view
 │   ├── css/
-│   │   └── styles.css        # Application styling
-│   ├── js/
-│   │   └── chat.js           # Frontend controller & state management
-│   │       ├── Authentication UI      # Login/Signup modal handling
-│   │       ├── Chat Interface         # Message rendering & SSE handling
-│   │       ├── Date Input Controls    # Birthdate/target date management
-│   │       └── LocalStorage Manager   # Session & history persistence
-│   └── assets/               # Built assets (generated)
+│   │   └── styles.css        # Responsive UI styling (mobile-optimized)
+│   └── js/
+│       └── app.js            # Frontend controller & state management
+│           ├── Authentication UI      # Login/Signup modal handling
+│           ├── Chat Interface         # Message rendering & SSE handling
+│           ├── Date Input Controls    # Birthdate/target date management
+│           ├── Zodiac Calculator      # 12별자리 자동 계산 및 표시
+│           └── LocalStorage Manager   # Session & history persistence
 │
 ├── db/                       # Database (SQL)
 │   └── schema.sql            # D1 database schema
+│
+├── types/                    # TypeScript Definitions
+│   └── cloudflare-env.d.ts   # Cloudflare Workers runtime types
 │
 ├── wrangler.jsonc            # Cloudflare Workers configuration
 ├── tsconfig.json             # TypeScript configuration
@@ -321,33 +327,41 @@ Today-s-horoscope/
 
 ### Key Files Description
 
-**`src/index.ts`** (TypeScript)
-- API 라우팅 및 요청 처리
-- JWT 인증 및 비밀번호 해싱
-- Workers AI 통합 및 스트리밍 응답
-- D1 데이터베이스 쿼리
+**`src/index.ts`** (380 lines)
+- **API 라우팅**: `/api/auth/*` (회원가입/로그인), `/api/chat` (AI 채팅)
+- **JWT 인증**: HS256 서명, 토큰 생성/검증
+- **PBKDF2 해싱**: 100,000 iterations, UUID salt
+- **Workers AI 통합**: Llama 3.1 8B 모델, SSE 스트리밍 응답
+- **D1 쿼리**: Prepared statements로 SQL injection 방지
+- **간소화된 SYSTEM_PROMPT**: 7가지 핵심 규칙으로 압축 (40줄→15줄)
 
-**`src/types.ts`** (TypeScript)
-- TypeScript 인터페이스 정의
-- `ChatMessage`: 채팅 메시지 구조
-- `ZodiacSign`: 12별자리 데이터 구조
-- `ZODIAC_SIGNS`: 12별자리 상수 배열 (양자리~물고기자리)
+**`src/types.ts`** (67 lines)
+- **Env**: Cloudflare Workers 환경 바인딩 (AI, DB, ASSETS)
+- **ChatMessage**: `{role, content}` 채팅 메시지 구조
+- **ZodiacSign**: 12별자리 데이터 (`name`, `nameEn`, `start`, `end`, `traits`)
+- **ZODIAC_SIGNS**: 12별자리 상수 배열 (양자리~물고기자리)
 
 **`public/js/app.js`** (JavaScript)
-- 인증 모달 UI 제어
-- SSE 기반 스트리밍 응답 처리
-- LocalStorage 세션 관리
-- 날짜 입력 및 검증 로직
-- 12별자리 계산 및 표시 로직 (`calculateZodiacSign`, `updateZodiacDisplay`)
+- **인증 UI**: 로그인/회원가입 모달, JWT 토큰 관리
+- **SSE 스트리밍**: 실시간 AI 응답 처리, 타이핑 인디케이터
+- **별자리 계산**: `calculateZodiacSign()`, `updateZodiacDisplay()`
+- **날짜 입력**: 증감 버튼, 숫자 키패드 최적화
+- **LocalStorage**: 채팅 기록, 세션 유지
+- **한국어 검증**: 비한국어 입력 차단 및 재작성 요청
 
-**`public/css/styles.css`** (CSS)
-- 반응형 UI 스타일링
-- 모바일 최적화 (터치 인터페이스, Safe Area 지원)
-- 다크/라이트 테마 변수
+**`public/css/styles.css`** (699 lines)
+- **반응형 디자인**: 모바일/데스크톱 최적화
+- **터치 UI**: 44px 최소 터치 영역, Safe Area 지원
+- **CSS 변수**: `--primary-color`, `--user-msg-bg` 등 테마 설정
 
-**`db/schema.sql`** (SQL)
-- Users 테이블 정의
-- 인덱스 및 제약조건 설정
+**`types/cloudflare-env.d.ts`** (7,334 lines, generated)
+- Cloudflare Workers runtime 타입 정의
+- Wrangler `npm run cf-typegen`으로 자동 생성
+- D1, AI, ASSETS 바인딩 타입
+
+**`db/schema.sql`**
+- `users` 테이블: id, username, password_hash, salt, birthdate
+- UNIQUE 제약조건, AUTOINCREMENT primary key
 
 ## API Reference
 
