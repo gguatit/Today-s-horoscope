@@ -48,6 +48,13 @@ export default {
       return new Response("Method not allowed", { status: 405 });
     }
 
+    if (url.pathname === "/api/chat/save-response") {
+      if (request.method === "POST") {
+        return handleSaveResponse(request, env);
+      }
+      return new Response("Method not allowed", { status: 405 });
+    }
+
     // 일치하지 않는 라우트는 404 처리
     return new Response("Not found", { status: 404 });
   },
@@ -289,6 +296,60 @@ function calculateZodiacSign(birthdate: string): ZodiacSign | null {
   
   // 일치하는 별자리가 없으면 null 반환
   return null;
+}
+
+/**
+ * AI 응답 저장 API
+ */
+async function handleSaveResponse(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  // JWT 인증 확인
+  const authHeader = request.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "로그인이 필요합니다." }), { 
+      status: 401,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  const token = authHeader.substring(7);
+  const payload = await verifyJWT(token);
+  if (!payload) {
+    return new Response(JSON.stringify({ error: "유효하지 않은 인증 토큰입니다." }), { 
+      status: 401,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  const userId = payload.sub;
+
+  try {
+    const { aiResponse } = await request.json() as { aiResponse: string };
+    
+    if (!aiResponse) {
+      return new Response(JSON.stringify({ error: "AI 응답이 필요합니다." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    // 가장 최근의 null ai_response 레코드 업데이트
+    await env.DB.prepare(
+      "UPDATE chat_history SET ai_response = ? WHERE user_id = ? AND ai_response IS NULL ORDER BY created_at DESC LIMIT 1"
+    ).bind(aiResponse, userId).run();
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { "Content-Type": "application/json" }
+    });
+  } catch (error) {
+    console.error("Error saving AI response:", error);
+    return new Response(JSON.stringify({ error: "Failed to save response" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
 }
 
 /**

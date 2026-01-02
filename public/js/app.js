@@ -895,6 +895,22 @@ async function sendMessage() {
     chatHistory.push({ role: "assistant", content: responseText });
     saveHistory();
 
+    // AI 응답을 서버에 저장
+    if (responseText && authToken) {
+      try {
+        await fetch("/api/chat/save-response", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ aiResponse: responseText })
+        });
+      } catch (e) {
+        console.error("Failed to save AI response:", e);
+      }
+    }
+
     // If response contains forbidden scripts (e.g., 한자/일본어/라틴/키릴), request a rewrite once
     if (containsForbiddenScript(responseText) && !sanitizedOnce) {
       sanitizedOnce = true;
