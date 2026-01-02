@@ -352,8 +352,16 @@ async function handleChatRequest(
       ...nonSystem,
     ];
 
-    // 사용자의 마지막 메시지 추출 (AI에게 보낸 실제 질문)
-    const userLastMessage = nonSystem.filter(m => m.role === "user").slice(-1)[0]?.content || "";
+    // 사용자의 실제 질문 추출 (시스템 태그 제외)
+    // [생년월일], [운세날짜], [운세|type:...] 같은 태그는 제외
+    const userMessages = nonSystem.filter(m => 
+      m.role === "user" && 
+      m.content &&
+      !m.content.startsWith("[생년월일]") &&
+      !m.content.startsWith("[운세날짜]") &&
+      !m.content.startsWith("[운세|")
+    );
+    const userLastMessage = userMessages.slice(-1)[0]?.content || "";
 
     // total_requests 증가 및 질문 기록 저장 (비동기 처리)
     ctx.waitUntil(
