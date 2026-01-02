@@ -196,14 +196,18 @@ function sanitize(str: string): string {
 
 ### Input Validation
 
-**Username Requirements**
+**User ID Requirements**
 - 형식: 영문/숫자 조합
-- 길이: 4-20자
-- 정규식: `^[a-zA-Z0-9]{4,20}$`
+- 길이: 4-8자
+- 정규식: `^[a-zA-Z0-9]{4,8}$`
+
+**User Name Requirements**
+- 길이: 2-4자
+- 모든 문자 허용 (한글, 영문 등)
 
 **Password Requirements**
-- 최소 길이: 8자 이상
-- 강력한 패스워드 권장 (구현 시 추가 검증 가능)
+- 길이: 8-20자
+- 모든 문자 허용
 
 ## Getting Started
 
@@ -384,8 +388,9 @@ Today-s-horoscope/
 **Request Body**
 ```json
 {
-  "username": "string (4-20 chars, alphanumeric)",
-  "password": "string (min 8 chars)",
+  "userId": "string (4-8 chars, alphanumeric)",
+  "userName": "string (2-4 chars, required)",
+  "password": "string (8-20 chars)",
   "birthdate": "string (YYYYMMDD, optional)"
 }
 ```
@@ -399,7 +404,7 @@ Today-s-horoscope/
 
 **Error Codes**
 - `400`: Invalid input format
-- `409`: Username already exists
+- `409`: User ID already exists
 - `500`: Server error
 
 #### POST `/api/auth/login`
@@ -409,7 +414,7 @@ Today-s-horoscope/
 **Request Body**
 ```json
 {
-  "username": "string",
+  "userId": "string",
   "password": "string"
 }
 ```
@@ -418,14 +423,15 @@ Today-s-horoscope/
 ```json
 {
   "token": "string (JWT)",
-  "username": "string",
+  "userId": "string",
+  "userName": "string",
   "birthdate": "string | null"
 }
 ```
 
 **Error Codes**
 - `400`: Missing credentials
-- `401`: Invalid username or password
+- `401`: Invalid user ID or password
 - `500`: Server error
 
 ### Chat Endpoint
@@ -459,11 +465,15 @@ AI 채팅 요청 (SSE 스트리밍)
 ```sql
 CREATE TABLE users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT NOT NULL UNIQUE,
+  user_id TEXT NOT NULL UNIQUE,
+  user_name TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   salt TEXT NOT NULL,
   birthdate TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_login TIMESTAMP,
+  location TEXT,
+  total_requests INTEGER DEFAULT 0
 );
 ```
 
