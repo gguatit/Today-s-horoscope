@@ -13,12 +13,6 @@ const birthdateInput = document.getElementById("birthdate-input");
 const setBirthdateButton = document.getElementById("set-birthdate-button");
 const clearBirthdateButton = document.getElementById("clear-birthdate-button");
 const birthdateDisplay = document.getElementById("birthdate-display");
-const horoscopeCheckbox = document.getElementById("horoscope-checkbox");
-const horoscopeTypeSelect = document.getElementById("horoscope-type");
-const birthdateSelects = document.getElementById("birthdate-selects");
-const birthdateYearSelect = document.getElementById("birthdate-year");
-const birthdateMonthSelect = document.getElementById("birthdate-month");
-const birthdateDaySelect = document.getElementById("birthdate-day");
 const birthdateIncButton = document.getElementById("birthdate-inc");
 const birthdateDecButton = document.getElementById("birthdate-dec");
 // Target date (운세 날짜) elements
@@ -283,23 +277,7 @@ function saveHistory() {
 }
 
 // Initialize birthdate UI for mobile fallback
-function isDateInputSupported() {
-  // Always return true to force using the single input field, 
-  // but we are now using type="text" with inputmode="numeric" for everyone.
-  return true;
-}
 
-function populateBirthdateSelects() {
-  // Deprecated: Selects are no longer used as primary input
-}
-
-function updateDaysSelect() {
-  // Deprecated
-}
-
-function updatePreviewFromSelects() {
-  // Deprecated
-}
 
 // Helper: Convert YYYYMMDD to YYYY-MM-DD
 function formatBirthdate(val) {
@@ -445,23 +423,8 @@ function addDaysToInput(days) {
   if (birthdateDisplay) birthdateDisplay.textContent = `생년월일: ${next}`;
 }
 
-function initBirthdateUI() {
-  // Force display of input, hide selects
-  if (birthdateSelects) birthdateSelects.style.display = "none";
-  if (birthdateInput) {
-      birthdateInput.style.display = "inline-block";
-      // Ensure attributes are set for numeric keypad
-      birthdateInput.setAttribute("type", "text");
-      birthdateInput.setAttribute("inputmode", "numeric");
-      birthdateInput.setAttribute("pattern", "[0-9]*");
-      birthdateInput.setAttribute("placeholder", "YYYYMMDD");
-      birthdateInput.setAttribute("maxlength", "8");
-  }
-}
-
 // Initialize UI on load
 document.addEventListener("DOMContentLoaded", () => {
-  initBirthdateUI();
   loadHistory();
   updateAuthUI();
 });
@@ -491,7 +454,6 @@ if (chatMessages) {
 
 // Mobile toolbar handlers
 const toolbarDob = document.getElementById('toolbar-dob');
-const toolbarHoroscope = document.getElementById('toolbar-horoscope');
 const toolbarFocus = document.getElementById('toolbar-focus');
 
 if (toolbarDob) {
@@ -503,33 +465,10 @@ if (toolbarDob) {
   });
 }
 
-if (toolbarHoroscope) {
-  toolbarHoroscope.addEventListener('click', () => {
-    if (!horoscopeCheckbox) return;
-    horoscopeCheckbox.checked = !horoscopeCheckbox.checked;
-    addMessageToChat('assistant', `운세 요청이 ${horoscopeCheckbox.checked ? '활성화' : '비활성화'}되었습니다.`);
-    // If enabling and birthdate is set, optionally auto-trigger (small hint only)
-    if (horoscopeCheckbox.checked && userBirthdate) {
-      addMessageToChat('assistant', '생년월일이 설정되어 있어 자동으로 운세 요청을 실행합니다.');
-    }
-  });
-}
-
 if (toolbarFocus) {
   toolbarFocus.addEventListener('click', () => {
     try { if (userInput) userInput.focus(); } catch (e) {}
     ensureScrollToBottomLater();
-  });
-}
-
-// Controls panel toggle (small gear icon in controls bar)
-const controlsToggle = document.getElementById('controls-toggle');
-const controlsPanel = document.getElementById('controls-panel');
-if (controlsToggle && controlsPanel) {
-  controlsToggle.addEventListener('click', () => {
-    const isVisible = controlsPanel.style.display === 'flex' || controlsPanel.style.display === 'block';
-    controlsPanel.style.display = isVisible ? 'none' : 'flex';
-    controlsToggle.setAttribute('aria-expanded', String(!isVisible));
   });
 }
 
@@ -732,32 +671,7 @@ async function sendMessage() {
     return;
   }
 
-  // Auto-detect '운세' keyword: if message contains '운세' but the checkbox is not checked,
-  // prompt user to enable the checkbox or set birthdate.
-  if (/운세/.test(message) && horoscopeCheckbox && !horoscopeCheckbox.checked) {
-    if (!userBirthdate) {
-      addMessageToChat(
-        "assistant",
-        "'운세' 요청이 감지되었습니다. 운세를 요청하려면 먼저 생년월일을 설정하고, '운세 요청'을 체크하세요.",
-      );
-      // reset and exit
-      userInput.value = "";
-      userInput.style.height = "auto";
-      isProcessing = false;
-      userInput.disabled = false;
-      sendButton.disabled = false;
-      return;
-    } else {
-      // Auto-enable and proceed immediately — user has birthdate set
-      try { if (horoscopeCheckbox) horoscopeCheckbox.checked = true; } catch (e) {}
-      // Brief feedback (non-blocking)
-      addMessageToChat(
-        "assistant",
-        "생년월일이 등록되어 있어 자동으로 운세를 요청합니다.",
-      );
-      // Continue processing, do not return; the usual flow will append the tag and send
-    }
-  }
+
 
   // Disable input while processing
   isProcessing = true;
@@ -794,36 +708,7 @@ async function sendMessage() {
     }
   }
 
-  // If horoscope checkbox is checked, add horoscope request
-  if (horoscopeCheckbox && horoscopeCheckbox.checked) {
-    // If birthdate not set, prompt user
-    if (!userBirthdate) {
-      // If user is logged in but birthdate is missing in local state, try to fetch from profile
-      if (authToken) {
-         // This case should be handled by login, but as a fallback:
-         addMessageToChat(
-          "assistant",
-          "운세를 요청하려면 생년월일을 먼저 설정해주세요.",
-        );
-      } else {
-        addMessageToChat(
-          "assistant",
-          "운세를 요청하려면 생년월일을 먼저 설정하거나 로그인해주세요.",
-        );
-      }
-      // reset input and UI and return
-      isProcessing = false;
-      userInput.disabled = false;
-      sendButton.disabled = false;
-      typingIndicator.classList.remove("visible");
-      return;
-    }
 
-    const type = (horoscopeTypeSelect && horoscopeTypeSelect.value) || "mixed";
-    // Insert a tag message for the model to indicate an explicit horoscope request
-    const horoscopeTag = { role: "user", content: `[운세|type:${type}]` };
-    chatHistory.push(horoscopeTag);
-  }
 
   try {
     // Create new assistant response element

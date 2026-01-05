@@ -87,7 +87,6 @@
         <div class="controls-right">
           <button id="set-birthdate-button" class="btn-primary">설정</button>
           <button id="clear-birthdate-button" class="btn-muted">지우기</button>
-          <button id="controls-toggle" class="btn-icon" aria-label="옵션">⚙️</button>
         </div>
       </div>
 
@@ -95,34 +94,9 @@
         <div class="input-container">
           <div class="input-row">
             <label for="birthdate-input">생년월일:</label>
-            <div id="birthdate-selects">
-              <select id="birthdate-year">
-                <option value="">년</option>
-              </select>
-              <select id="birthdate-month">
-                <option value="">월</option>
-              </select>
-              <select id="birthdate-day">
-                <option value="">일</option>
-              </select>
-            </div>
             <label for="target-date-input" class="target-date-label">운세 날짜:</label>
             <div id="target-date-display">(운세 날짜: 오늘)</div>
             <div id="birthdate-display"></div>
-          </div>
-
-          <!-- Horoscope options -->
-          <div id="controls-panel" class="controls-panel" style="display:none;">
-            <label class="control-inline controls-panel-label">
-              <input id="horoscope-checkbox" type="checkbox" /> 운세 요청
-            </label>
-            <label class="control-inline">운세 타입: 
-              <select id="horoscope-type">
-                <option value="mixed">혼합</option>
-                <option value="chinese">한국/중국 띠</option>
-              </select>
-            </label>
-            <div class="controls-panel-info">운세 요청 시 <strong>생년월일</strong>이 필요합니다.</div>
           </div>
 
           <div class="textarea-row">
@@ -149,7 +123,6 @@
     <!-- Mobile-only toolbar -->
     <div id="mobile-toolbar" class="mobile-toolbar" aria-hidden="true">
       <button id="toolbar-dob" class="mobile-toolbar-btn" aria-label="생년월일 설정">생년월일</button>
-      <button id="toolbar-horoscope" class="mobile-toolbar-btn" aria-label="운세 요청">운세</button>
       <button id="toolbar-focus" class="mobile-toolbar-btn" aria-label="메시지 입력으로 포커스">입력</button>
     </div>
 
