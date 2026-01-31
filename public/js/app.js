@@ -599,7 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateAuthUI();
   updateTodayDate();
   
-  // 생년월일이 저장되어 있으면 표시
+  // 생년월일이 저장되어 있으면 표시s
   if (userBirthdate) {
     const birthdateDisplay = document.getElementById('birthdate-display');
     const birthdateSection = document.getElementById('birthdate-section');
