@@ -573,10 +573,16 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // 초기화
   loadHistory();
+  
+  // localStorage에서 생년월일 다시 로드 (새로고침 대비)
+  if (!userBirthdate) {
+    userBirthdate = localStorage.getItem('userBirthdate');
+  }
+  
   updateAuthUI();
   updateTodayDate();
   
-  // 생년월일이 저장되어 있으면 표시s
+  // 생년월일이 저장되어 있으면 표시
   if (userBirthdate) {
     const birthdateDisplay = document.getElementById('birthdate-display');
     const birthdateSection = document.getElementById('birthdate-section');
