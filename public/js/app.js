@@ -334,6 +334,12 @@ async function handleAuthSubmit(e) {
 }
 
 // ========== 메시지 전송 ==========
+async function sendMessage() {
+  const userInput = document.getElementById('user-input');
+  const sendButton = document.getElementById('send-button');
+  const chatMessages = document.getElementById('chat-messages');
+  const typingIndicator = document.getElementById('typing-indicator');
+  
   const message = userInput.value.trim();
 
   if (!authToken) {
