@@ -25,3 +25,17 @@ CREATE TABLE IF NOT EXISTS chat_history (
 -- 인덱스 추가 (빠른 조회를 위해)
 CREATE INDEX IF NOT EXISTS idx_chat_history_user_id ON chat_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_history_created_at ON chat_history(created_at);
+
+-- 일일 운세 조회 횟수 제한 테이블
+CREATE TABLE IF NOT EXISTS daily_fortune_limits (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,           -- 사용자 ID (users.user_id 참조)
+  date TEXT NOT NULL,               -- 날짜 (YYYY-MM-DD 형식)
+  count INTEGER DEFAULT 0,          -- 해당 날짜의 조회 횟수
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, date)             -- 사용자당 날짜별로 하나의 레코드만 존재
+);
+
+-- 일일 제한 테이블 인덱스
+CREATE INDEX IF NOT EXISTS idx_daily_limits_user_date ON daily_fortune_limits(user_id, date);
+CREATE INDEX IF NOT EXISTS idx_daily_limits_date ON daily_fortune_limits(date);

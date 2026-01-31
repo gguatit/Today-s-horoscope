@@ -4,6 +4,7 @@
  * @license MIT
  */
 import { Env, ChatMessage, ZODIAC_SIGNS, ZodiacSign } from "./types";
+import { validateAndIncrement } from "./rateLimit";
 
 const MODEL_ID = "@cf/meta/llama-3.1-8b-instruct-fp8";
 
@@ -409,6 +410,19 @@ async function handleChatRequest(
 
   // 사용자 ID 가져오기
   const userId = payload.sub;
+
+  // ===== 일일 운세 횟수 제한 체크 (4회) =====
+  const limitCheck = await validateAndIncrement(userId, env);
+  
+  if (!limitCheck.success) {
+    return new Response(JSON.stringify({ 
+      error: limitCheck.message,
+      remaining: 0
+    }), { 
+      status: 429, // Too Many Requests
+      headers: { "Content-Type": "application/json" }
+    });
+  }
 
   try {
     // JSON 요청 본문 파싱
