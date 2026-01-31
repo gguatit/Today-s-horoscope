@@ -10,11 +10,14 @@ import { Env } from "./types";
 const MAX_DAILY_REQUESTS = 4;
 
 /**
- * 오늘 날짜를 YYYY-MM-DD 형식으로 반환
+ * 오늘 날짜를 YYYY-MM-DD 형식으로 반환 (한국 시간 기준 KST UTC+9)
  */
 function getTodayString(): string {
   const now = new Date();
-  return now.toISOString().split('T')[0];
+  // 한국 시간 (UTC+9)으로 변환
+  const kstOffset = 9 * 60; // 9시간 = 540분
+  const kstDate = new Date(now.getTime() + kstOffset * 60 * 1000);
+  return kstDate.toISOString().split('T')[0];
 }
 
 /**
