@@ -84,11 +84,21 @@ function calculateZodiacSign(birthdate) {
 
 // 별자리 UI 업데이트
 function updateZodiacUI(birthdate) {
+  console.log('updateZodiacUI called with:', birthdate);
+  
   const zodiacInfo = document.getElementById('zodiac-info');
   const zodiacName = document.getElementById('zodiac-name');
   const zodiacDates = document.getElementById('zodiac-dates');
   const zodiacDescEl = document.getElementById('zodiac-desc');
   const zodiacDescText = zodiacDescEl ? zodiacDescEl.querySelector('p') : null;
+  
+  console.log('Elements found:', {
+    zodiacInfo: !!zodiacInfo,
+    zodiacName: !!zodiacName,
+    zodiacDates: !!zodiacDates,
+    zodiacDescEl: !!zodiacDescEl,
+    zodiacDescText: !!zodiacDescText
+  });
   
   if (!birthdate) {
     if (zodiacInfo) zodiacInfo.style.display = 'none';
@@ -97,6 +107,8 @@ function updateZodiacUI(birthdate) {
   }
   
   const zodiac = calculateZodiacSign(birthdate);
+  console.log('Calculated zodiac:', zodiac);
+  
   if (!zodiac) {
     if (zodiacInfo) zodiacInfo.style.display = 'none';
     if (zodiacDescEl) zodiacDescEl.style.display = 'none';
@@ -114,6 +126,7 @@ function updateZodiacUI(birthdate) {
       const endDay = zodiac.end.substring(2);
       zodiacDates.textContent = `${startMonth}.${startDay} ~ ${endMonth}.${endDay}`;
     }
+    console.log('Zodiac info displayed');
   }
   
   // 별자리 설명 표시
@@ -121,6 +134,7 @@ function updateZodiacUI(birthdate) {
     zodiacDescEl.style.display = 'block';
     const descKey = zodiac.nameEn.toLowerCase();
     zodiacDescText.textContent = zodiacDescriptions[descKey] || '';
+    console.log('Zodiac description displayed:', descKey);
   }
 }
 
@@ -575,27 +589,30 @@ document.addEventListener('DOMContentLoaded', () => {
   loadHistory();
   
   // localStorage에서 생년월일 다시 로드 (새로고침 대비)
-  if (!userBirthdate) {
-    userBirthdate = localStorage.getItem('userBirthdate');
-  }
-  
-  updateAuthUI();
-  updateTodayDate();
-  
-  // 생년월일이 저장되어 있으면 표시
-  if (userBirthdate) {
+  const savedBirthdate = localStorage.getItem('userBirthdate');
+  if (savedBirthdate) {
+    userBirthdate = savedBirthdate;
+    
+    // 생년월일이 저장되어 있으면 표시
     const birthdateDisplay = document.getElementById('birthdate-display');
     const birthdateSection = document.getElementById('birthdate-section');
     const zodiac = calculateZodiacSign(userBirthdate);
+    
+    console.log('Restoring birthdate:', userBirthdate, 'zodiac:', zodiac);
     
     if (birthdateDisplay) {
       birthdateDisplay.textContent = zodiac 
         ? `생년월일: ${userBirthdate} (${zodiac.name})`
         : `생년월일: ${userBirthdate}`;
     }
-    if (birthdateSection) birthdateSection.style.display = 'block';
+    if (birthdateSection) {
+      birthdateSection.style.display = 'block';
+    }
     
     // 별자리 UI 업데이트
     updateZodiacUI(userBirthdate);
   }
+  
+  updateAuthUI();
+  updateTodayDate();
 });
