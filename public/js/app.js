@@ -26,6 +26,8 @@ const signupBtn = document.getElementById('signup-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const userInfo = document.getElementById('user-info');
 const authModal = document.getElementById('auth-modal');
+
+console.log('DOM 요소 확인:', { loginBtn, signupBtn, authModal });
 const authTitle = document.getElementById('auth-title');
 const authForm = document.getElementById('auth-form');
 const authUserIdInput = document.getElementById('auth-userid');
@@ -48,10 +50,7 @@ let isProcessing = false;
 
 // ========== 12별자리 데이터 ==========
 const ZODIAC_SIGNS = [
-  {채팅 기록
-const chatHistoryItems = document.querySelectorAll('.chat-history li');
-
-//  name: "양자리", nameEn: "Aries", start: "0321", end: "0419" },
+  { name: "양자리", nameEn: "Aries", start: "0321", end: "0419" },
   { name: "황소자리", nameEn: "Taurus", start: "0420", end: "0520" },
   { name: "쌍둥이자리", nameEn: "Gemini", start: "0521", end: "0621" },
   { name: "게자리", nameEn: "Cancer", start: "0622", end: "0722" },
@@ -117,8 +116,17 @@ function calculateZodiacSign(birthdate) {
       }
     }
   }
-  r별자리 UI 업데이트
+  return null;
+}
+
+// 별자리 UI 업데이트
 function updateZodiacUI(birthdate) {
+  const zodiacInfo = document.getElementById('zodiac-info');
+  const zodiacName = document.getElementById('zodiac-name');
+  const zodiacDates = document.getElementById('zodiac-dates');
+  const zodiacDescEl = document.getElementById('zodiac-desc');
+  const zodiacDescText = zodiacDescEl ? zodiacDescEl.querySelector('p') : null;
+  
   if (!birthdate) {
     if (zodiacInfo) zodiacInfo.style.display = 'none';
     if (zodiacDescEl) zodiacDescEl.style.display = 'none';
@@ -147,19 +155,15 @@ function updateZodiacUI(birthdate) {
   
   // 별자리 설명 표시
   if (zodiacDescEl && zodiacDescText) {
-  const zodiac = userBirthdate ? calculateZodiacSign(userBirthdate) : null;
-  savedFortunes.push({
-    text: fortuneText,
-    date: new Date().toLocaleDateString(),
-    zodiac: zodiac ? zodiac.name : '알 수 없음'
+    zodiacDescEl.style.display = 'block';
+    const descKey = zodiac.nameEn.toLowerCase();
+    zodiacDescText.textContent = zodiacDescriptions[descKey] || '';
   }
-}
-
-// eturn null;
 }
 
 // 채팅 메시지 추가
 function addMessageToChat(role, content) {
+  const chatMessages = document.getElementById('chat-messages');
   const messageEl = document.createElement('div');
   messageEl.className = `message ${role === 'user' ? 'user' : 'ai'}`;
   
@@ -185,10 +189,11 @@ function addMessageToChat(role, content) {
 // 운세 저장
 function saveFortune(fortuneText) {
   let savedFortunes = JSON.parse(localStorage.getItem('savedFortunes')) || [];
+  const zodiac = userBirthdate ? calculateZodiacSign(userBirthdate) : null;
   savedFortunes.push({
     text: fortuneText,
     date: new Date().toLocaleDateString(),
-    zodiac: selectedZodiacText.textContent
+    zodiac: zodiac ? zodiac.name : '알 수 없음'
   });
   localStorage.setItem('savedFortunes', JSON.stringify(savedFortunes));
   alert('운세가 저장됐어요 ✨');
@@ -227,87 +232,55 @@ function updateTodayDate() {
 }
 
 // ========== 인증 UI ==========
-
 function updateAuthUI() {
+  const loginBtn = document.getElementById('login-btn');
+  const signupBtn = document.getElementById('signup-btn');
+  const logoutBtn = document.getElementById('logout-btn');
+  const userInfo = document.getElementById('user-info');
+  const userInput = document.getElementById('user-input');
+  const sendButton = document.getElementById('send-button');
+  
   if (authToken && authUserName) {
-    loginBtn.style.display = 'none';
-    signupBtn.style.display = 'none';
-    logoutBtn.style.display = 'inline-block';
-    userInfo.style.display = 'inline-block';
-    userInfo.textContent = `${authUserName}님`;
+    if (loginBtn) loginBtn.style.display = 'none';
+    if (signupBtn) signupBtn.style.display = 'none';
+    if (logoutBtn) logoutBtn.style.display = 'inline-block';
+    if (userInfo) {
+      userInfo.style.display = 'inline-block';
+      userInfo.textContent = `${authUserName}님`;
+    }
     
-    userInput.disabled = false;
-    sendButton.disabled = false;
-    userInput.placeholder = '운세에 대해 물어보세요...';
+    if (userInput) {
+      userInput.disabled = false;
+      userInput.placeholder = '운세에 대해 물어보세요...';
+    }
+    if (sendButton) sendButton.disabled = false;
   } else {
-    loginBtn.style.display = 'inline-block';
-    signupBtn.style.display = 'inline-block';
-    logoutBtn.style.display = 'none';
-    userInfo.style.display = 'none';
+    if (loginBtn) loginBtn.style.display = 'inline-block';
+    if (signupBtn) signupBtn.style.display = 'inline-block';
+    if (logoutBtn) logoutBtn.style.display = 'none';
+    if (userInfo) userInfo.style.display = 'none';
     
-    userInput.disabled = true;
-    sendButton.disabled = true;
-    userInput.placeholder = '로그인이 필요합니다';
+    if (userInput) {
+      userInput.disabled = true;
+      userInput.placeholder = '로그인이 필요합니다';
+    }
+    if (sendButton) sendButton.disabled = true;
   }
 }
 
-// 로그인 버튼
-loginBtn.addEventListener('click', (e) => {
+// ========== 인증 폼 제출 핸들러 ==========
+async function handleAuthSubmit(e) {
   e.preventDefault();
-  authModal.style.display = 'flex';
-  authTitle.textContent = '로그인';
-  authUserNameInput.style.display = 'none';
-  authUserNameInput.required = false;
-  if (zodiacInfo) zodiacInfo.style.display = 'none';
-  if (zodiacDescEl) zodiacDescEl.style.display = 'none';
-  authBirthdateInput.style.display = 'none';
-  authBirthdateInput.required = false;
-  authForm.dataset.mode = 'login';
-  authMessage.textContent = '';
-});
-
-// 회원가입 버튼
-signupBtn.addEventListener('click', (e) => {
-  e.preventDefault();
-  authModal.style.display = 'flex';
-  authTitle.textContent = '회원가입';
-  authUserNameInput.style.display = 'block';
-  authUserNameInput.required = true;
-  authBirthdateInput.style.display = 'block';
-  authBirthdateInput.required = false;
-  authForm.dataset.mode = 'signup';
-  authMessage.textContent = '';
-});
-
-// 취소 버튼
-authCancelBtn.addEventListener('click', () => {
-  authModal.style.display = 'none';
-});
-
-// 로그아웃 버튼
-logoutBtn.addEventListener('click', () => {
-  authToken = null;
-  authUser = null;
-  authUserName = null;
-  userBirthdate = null;
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('authUser');
-  localStorage.removeItem('authUserName');
-  localStorage.removeItem('userBirthdate');
-  localStorage.removeItem('chatHistory');
   
-  birthdateDisplay.textContent = '';
-  birthdateSection.style.display = 'none';
-  chatHistory = [];
-  chatMessages.innerHTML = '';
+  const authForm = document.getElementById('auth-form');
+  const authUserIdInput = document.getElementById('auth-userid');
+  const authUserNameInput = document.getElementById('auth-username');
+  const authPasswordInput = document.getElementById('auth-password');
+  const authBirthdateInput = document.getElementById('auth-birthdate');
+  const authMessage = document.getElementById('auth-message');
+  const authModal = document.getElementById('auth-modal');
+  const authTitle = document.getElementById('auth-title');
   
-  addMessageToChat('ai', '로그아웃되었습니다.');
-  updateAuthUI();
-});
-
-// 인증 폼 제출
-authForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
   const mode = authForm.dataset.mode;
   const userId = authUserIdInput.value;
   const userName = authUserNameInput.value;
@@ -345,27 +318,34 @@ authForm.addEventListener('submit', async (e) => {
         if (data.birthdate) {
           userBirthdate = data.birthdate;
           localStorage.setItem('userBirthdate', userBirthdate);
-          birthdateDisplay.textContent = `생년월일: ${userBirthdate}`;
-          birthdateSection.style.display = 'block';
           
-          // 별자리 계산 및 표시
-            updateZodiacUI(userBirthdate);
+          const birthdateDisplay = document.getElementById('birthdate-display');
+          const birthdateSection = document.getElementById('birthdate-section');
           const zodiac = calculateZodiacSign(userBirthdate);
-          if (zodiac) {
-            birthdateDisplay.textContent = `생년월일: ${userBirthdate} (${zodiac.name})`;
+          
+          if (birthdateDisplay) {
+            birthdateDisplay.textContent = zodiac 
+              ? `생년월일: ${userBirthdate} (${zodiac.name})`
+              : `생년월일: ${userBirthdate}`;
           }
+          if (birthdateSection) birthdateSection.style.display = 'block';
+          
+          // 별자리 UI 업데이트
+          updateZodiacUI(userBirthdate);
         }
-        if (userBirthdate) {
-          addMessageToChat('ai', `${authUserName}님, 환영합니다! 운세를 물어보세요.`);
-        } else {
-          addMessageToChat('ai', `${authUserName}님, 환영합니다! 회원가입 시 생년월일을 입력하시면 더 정확한 운세를 받을 수 있습니다.`);
-        }
+        
+        const chatMessages = document.getElementById('chat-messages');
         chatHistory = [];
         chatMessages.innerHTML = '';
         
         updateAuthUI();
         authModal.style.display = 'none';
-        addMessageToChat('ai', `${authUserName}님, 환영합니다! 생년월일을 설정하고 운세를 물어보세요.`);
+        
+        if (userBirthdate) {
+          addMessageToChat('ai', `${authUserName}님, 환영합니다! 운세를 물어보세요.`);
+        } else {
+          addMessageToChat('ai', `${authUserName}님, 환영합니다! 회원가입 시 생년월일을 입력하시면 더 정확한 운세를 받을 수 있습니다.`);
+        }
       } else {
         authMessage.style.color = 'green';
         authMessage.textContent = '회원가입 성공! 로그인해주세요.';
@@ -388,37 +368,9 @@ authForm.addEventListener('submit', async (e) => {
     authMessage.style.color = 'red';
     authMessage.textContent = '서버 통신 오류';
   }
-});선택 기능 제거됨 (DB 생년월일 기반 자동 표시) ==========   const text = `${name} 운세 알려줘`;
-      userInput.value = text;
-    }
-  });
-});
-
-// ========== 채팅 기록 UI ==========
-
-chatHistoryItems.forEach(item => {
-  item.addEventListener('click', () => {
-    if (!authToken) {
-      addMessageToChat('ai', '로그인 후 이용하실 수 있습니다.');
-      return;
-    }
-    const text = item.textContent;
-    userInput.value = text;
-    userInput.focus();
-  });
-});
+}
 
 // ========== 메시지 전송 ==========
-
-sendButton.addEventListener('click', sendMessage);
-userInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-});
-
-async function sendMessage() {
   const message = userInput.value.trim();
 
   if (!authToken) {
@@ -557,23 +509,147 @@ async function sendMessage() {
   }
 }
 
-// ========== 초기화 ==========
+// ========== 이벤트 리스너 초기화 ==========
+function initEventListeners() {
+  const loginBtn = document.getElementById('login-btn');
+  const signupBtn = document.getElementById('signup-btn');
+  const logoutBtn = document.getElementById('logout-btn');
+  const authModal = document.getElementById('auth-modal');
+  const authTitle = document.getElementById('auth-title');
+  const authForm = document.getElementById('auth-form');
+  const authUserNameInput = document.getElementById('auth-username');
+  const authBirthdateInput = document.getElementById('auth-birthdate');
+  const authCancelBtn = document.getElementById('auth-cancel');
+  const authMessage = document.getElementById('auth-message');
+  const sendButton = document.getElementById('send-button');
+  const userInput = document.getElementById('user-input');
+  const chatHistoryItems = document.querySelectorAll('.chat-history li');
+  
+  // 로그인 버튼
+  if (loginBtn) {
+    loginBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      authModal.style.display = 'flex';
+      authTitle.textContent = '로그인';
+      authUserNameInput.style.display = 'none';
+      authUserNameInput.required = false;
+      authBirthdateInput.style.display = 'none';
+      authBirthdateInput.required = false;
+      authForm.dataset.mode = 'login';
+      authMessage.textContent = '';
+    });
+  }
 
+  // 회원가입 버튼
+  if (signupBtn) {
+    signupBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      authModal.style.display = 'flex';
+      authTitle.textContent = '회원가입';
+      authUserNameInput.style.display = 'block';
+      authUserNameInput.required = true;
+      authBirthdateInput.style.display = 'block';
+      authBirthdateInput.required = false;
+      authForm.dataset.mode = 'signup';
+      authMessage.textContent = '';
+    });
+  }
+
+  // 취소 버튼
+  if (authCancelBtn) {
+    authCancelBtn.addEventListener('click', () => {
+      authModal.style.display = 'none';
+    });
+  }
+
+  // 로그아웃 버튼
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      authToken = null;
+      authUser = null;
+      authUserName = null;
+      userBirthdate = null;
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('authUser');
+      localStorage.removeItem('authUserName');
+      localStorage.removeItem('userBirthdate');
+      localStorage.removeItem('chatHistory');
+      
+      const birthdateDisplay = document.getElementById('birthdate-display');
+      const birthdateSection = document.getElementById('birthdate-section');
+      const zodiacInfo = document.getElementById('zodiac-info');
+      const zodiacDescEl = document.getElementById('zodiac-desc');
+      const chatMessages = document.getElementById('chat-messages');
+      
+      if (birthdateDisplay) birthdateDisplay.textContent = '';
+      if (birthdateSection) birthdateSection.style.display = 'none';
+      if (zodiacInfo) zodiacInfo.style.display = 'none';
+      if (zodiacDescEl) zodiacDescEl.style.display = 'none';
+      chatHistory = [];
+      if (chatMessages) chatMessages.innerHTML = '';
+      
+      addMessageToChat('ai', '로그아웃되었습니다.');
+      updateAuthUI();
+    });
+  }
+
+  // 인증 폼 제출
+  if (authForm) {
+    authForm.addEventListener('submit', handleAuthSubmit);
+  }
+
+  // 채팅 입력
+  if (sendButton) {
+    sendButton.addEventListener('click', sendMessage);
+  }
+  
+  if (userInput) {
+    userInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  }
+
+  // 채팅 기록 클릭
+  chatHistoryItems.forEach(item => {
+    item.addEventListener('click', () => {
+      if (!authToken) {
+        addMessageToChat('ai', '로그인 후 이용하실 수 있습니다.');
+        return;
+      }
+      const text = item.textContent;
+      userInput.value = text;
+      userInput.focus();
+    });
+  });
+}
+
+// ========== 초기화 ==========
 document.addEventListener('DOMContentLoaded', () => {
+  // 이벤트 리스너 등록
+  initEventListeners();
+  
+  // 초기화
   loadHistory();
   updateAuthUI();
   updateTodayDate();
   
   // 생년월일이 저장되어 있으면 표시
   if (userBirthdate) {
+    const birthdateDisplay = document.getElementById('birthdate-display');
+    const birthdateSection = document.getElementById('birthdate-section');
     const zodiac = calculateZodiacSign(userBirthdate);
-    if (zodiac) {
-      birthdateDisplay.textContent = `생년월일: ${userBirthdate} (${zodiac.name})`;
-    } else {
-      birthdateDisplay.textContent = `생년월일: ${userBirthdate}`;
+    
+    if (birthdateDisplay) {
+      birthdateDisplay.textContent = zodiac 
+        ? `생년월일: ${userBirthdate} (${zodiac.name})`
+        : `생년월일: ${userBirthdate}`;
     }
-    birthdateSection.style.display = 'block';
+    if (birthdateSection) birthdateSection.style.display = 'block';
+    
+    // 별자리 UI 업데이트
+    updateZodiacUI(userBirthdate);
   }
 });
-  updateZodiacUI(userBirthdate);
-    
