@@ -18,26 +18,21 @@ function getTodayString(): string {
 }
 
 /**
- * 두 질문이 유사한지 비교 (정규화 후 비교)
+ * 두 질문이 유사한지 비교 (정규화 후 완전 일치만 체크)
  * @param question1 - 첫 번째 질문
  * @param question2 - 두 번째 질문
  * @returns 유사하면 true
  */
 function isSimilarQuestion(question1: string, question2: string): boolean {
-  // 공백, 특수문자 제거 후 소문자로 변환하여 비교
+  // 공백, 특수문자 제거 후 비교
   const normalize = (str: string) => 
-    str.replace(/[\s\.,!?~]/g, '').toLowerCase().trim();
+    str.replace(/[\s\.,!?~ㅋㅎㅜㅠ]/g, '').trim();
   
   const norm1 = normalize(question1);
   const norm2 = normalize(question2);
   
-  // 완전히 동일하거나 한쪽이 다른 쪽을 포함하는 경우
-  if (norm1 === norm2) return true;
-  if (norm1.length > 5 && norm2.length > 5) {
-    if (norm1.includes(norm2) || norm2.includes(norm1)) return true;
-  }
-  
-  return false;
+  // 완전히 동일한 경우만 중복으로 판단
+  return norm1 === norm2;
 }
 
 /**
