@@ -3,43 +3,6 @@
  * 현재 HTML 구조에 맞춘 재구성 버전
  */
 
-// ========== DOM 요소 ==========
-const chatMessages = document.getElementById('chat-messages');
-const userInput = document.getElementById('user-input');
-const sendButton = document.getElementById('send-button');
-const typingIndicator = document.getElementById('typing-indicator');
-
-// 생년월일 관련
-const birthdateSection = document.getElementById('birthdate-section');
-const birthdateDisplay = document.getElementById('birthdate-display');
-
-// 별자리 정보 표시 관련
-const zodiacInfo = document.getElementById('zodiac-info');
-const zodiacName = document.getElementById('zodiac-name');
-const zodiacDates = document.getElementById('zodiac-dates');
-const zodiacDescEl = document.getElementById('zodiac-desc');
-const zodiacDescText = zodiacDescEl ? zodiacDescEl.querySelector('p') : null;
-
-// 인증 관련
-const loginBtn = document.getElementById('login-btn');
-const signupBtn = document.getElementById('signup-btn');
-const logoutBtn = document.getElementById('logout-btn');
-const userInfo = document.getElementById('user-info');
-const authModal = document.getElementById('auth-modal');
-
-console.log('DOM 요소 확인:', { loginBtn, signupBtn, authModal });
-const authTitle = document.getElementById('auth-title');
-const authForm = document.getElementById('auth-form');
-const authUserIdInput = document.getElementById('auth-userid');
-const authUserNameInput = document.getElementById('auth-username');
-const authPasswordInput = document.getElementById('auth-password');
-const authBirthdateInput = document.getElementById('auth-birthdate');
-const authCancelBtn = document.getElementById('auth-cancel');
-const authMessage = document.getElementById('auth-message');
-
-// 오늘 날짜
-const todayDateEl = document.getElementById('today-date');
-
 // ========== 상태 변수 ==========
 let authToken = localStorage.getItem('authToken');
 let authUser = localStorage.getItem('authUser');
