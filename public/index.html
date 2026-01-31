@@ -28,69 +28,17 @@
                          text-align: center;"></div>
                 </div>
                 
-                <button class="zodiac-select-btn">
-                    <span class="selected-zodiac">물병자리</span>
-                    선택
-                </button>
+                <!-- 별자리 정보 표시 -->
+                <div class="zodiac-info" id="zodiac-info" style="display: none; margin-bottom: 14px;">
+                    <div style="padding: 14px; border-radius: 14px; background: #2B2F6F; text-align: center;">
+                        <div id="zodiac-name" style="font-size: 18px; font-weight: 500; margin-bottom: 6px;"></div>
+                        <div id="zodiac-dates" style="font-size: 12px; opacity: 0.8;"></div>
+                    </div>
+                </div>
                 
-                <!-- 별자리 리스트 -->
-                <ul class="zodiac-list">
-                    <li data-zodiac="aries">
-                        <strong>양자리</strong>
-                        <span>3.21 ~ 4.19</span>
-                    </li>
-                    <li data-zodiac="taurus">
-                        <strong>황소자리</strong>
-                        <span>4.20 ~ 5.20</span>
-                    </li>
-                    <li data-zodiac="gemini">
-                        <strong>쌍둥이자리</strong>
-                        <span>5.21 ~ 6.21</span>
-                    </li>
-                    <li data-zodiac="cancer">
-                        <strong>게자리</strong>
-                        <span>6.22 ~ 7.22</span>
-                    </li>
-                    <li data-zodiac="leo">
-                        <strong>사자자리</strong>
-                        <span>7.23 ~ 8.22</span>
-                    </li>
-                    <li data-zodiac="virgo">
-                        <strong>처녀자리</strong>
-                        <span>8.23 ~ 9.22</span>
-                    </li>
-                    <li data-zodiac="libra">
-                        <strong>천칭자리</strong>
-                        <span>9.23 ~ 10.22</span>
-                    </li>
-                    <li data-zodiac="scorpio">
-                        <strong>전갈자리</strong>
-                        <span>10.23 ~ 11.22</span>
-                    </li>
-                    <li data-zodiac="sagittarius">
-                        <strong>사수자리</strong>
-                        <span>11.23 ~ 12.21</span>
-                    </li>
-                    <li data-zodiac="capricorn">
-                        <strong>염소자리</strong>
-                        <span>12.22 ~ 1.19</span>
-                    </li>
-                    <li data-zodiac="aquarius">
-                        <strong>물병자리</strong>
-                        <span>1.20 ~ 2.18</span>
-                    </li>
-                    <li data-zodiac="pisces">
-                        <strong>물고기자리</strong>
-                        <span>2.19 ~ 3.20</span>
-                    </li>
-                </ul>
-                
-                <!-- 선택된 별자리 설명 -->
-                <div class="zodiac-desc">
-                    <p>
-                        자유로운 사고와 독창성을 가진 별자리로,<br>
-                        새로운 시도를 두려워하지 않는 성향을 가지고 있어요.
-                    </p>
+                <!-- 별자리 설명 -->
+                <div class="zodiac-desc" id="zodiac-desc" style="display: none;">
+                    <p></p>
                 </div>
             </aside>
 

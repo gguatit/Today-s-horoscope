@@ -13,6 +13,13 @@ const typingIndicator = document.getElementById('typing-indicator');
 const birthdateSection = document.getElementById('birthdate-section');
 const birthdateDisplay = document.getElementById('birthdate-display');
 
+// 별자리 정보 표시 관련
+const zodiacInfo = document.getElementById('zodiac-info');
+const zodiacName = document.getElementById('zodiac-name');
+const zodiacDates = document.getElementById('zodiac-dates');
+const zodiacDescEl = document.getElementById('zodiac-desc');
+const zodiacDescText = zodiacDescEl ? zodiacDescEl.querySelector('p') : null;
+
 // 인증 관련
 const loginBtn = document.getElementById('login-btn');
 const signupBtn = document.getElementById('signup-btn');
@@ -28,16 +35,6 @@ const authBirthdateInput = document.getElementById('auth-birthdate');
 const authCancelBtn = document.getElementById('auth-cancel');
 const authMessage = document.getElementById('auth-message');
 
-// 별자리 관련
-const zodiacSelectBtn = document.querySelector('.zodiac-select-btn');
-const sidebarLeft = document.querySelector('.sidebar-left');
-const zodiacItems = document.querySelectorAll('.zodiac-list li');
-const selectedZodiacText = document.querySelector('.selected-zodiac');
-const zodiacDescBox = document.querySelector('.zodiac-desc p');
-
-// 채팅 기록
-const chatHistoryItems = document.querySelectorAll('.chat-history li');
-
 // 오늘 날짜
 const todayDateEl = document.getElementById('today-date');
 
@@ -51,7 +48,10 @@ let isProcessing = false;
 
 // ========== 12별자리 데이터 ==========
 const ZODIAC_SIGNS = [
-  { name: "양자리", nameEn: "Aries", start: "0321", end: "0419" },
+  {채팅 기록
+const chatHistoryItems = document.querySelectorAll('.chat-history li');
+
+//  name: "양자리", nameEn: "Aries", start: "0321", end: "0419" },
   { name: "황소자리", nameEn: "Taurus", start: "0420", end: "0520" },
   { name: "쌍둥이자리", nameEn: "Gemini", start: "0521", end: "0621" },
   { name: "게자리", nameEn: "Cancer", start: "0622", end: "0722" },
@@ -117,7 +117,45 @@ function calculateZodiacSign(birthdate) {
       }
     }
   }
-  return null;
+  r별자리 UI 업데이트
+function updateZodiacUI(birthdate) {
+  if (!birthdate) {
+    if (zodiacInfo) zodiacInfo.style.display = 'none';
+    if (zodiacDescEl) zodiacDescEl.style.display = 'none';
+    return;
+  }
+  
+  const zodiac = calculateZodiacSign(birthdate);
+  if (!zodiac) {
+    if (zodiacInfo) zodiacInfo.style.display = 'none';
+    if (zodiacDescEl) zodiacDescEl.style.display = 'none';
+    return;
+  }
+  
+  // 별자리 정보 표시
+  if (zodiacInfo) {
+    zodiacInfo.style.display = 'block';
+    if (zodiacName) zodiacName.textContent = `${zodiac.name} (${zodiac.nameEn})`;
+    if (zodiacDates) {
+      const startMonth = zodiac.start.substring(0, 2);
+      const startDay = zodiac.start.substring(2);
+      const endMonth = zodiac.end.substring(0, 2);
+      const endDay = zodiac.end.substring(2);
+      zodiacDates.textContent = `${startMonth}.${startDay} ~ ${endMonth}.${endDay}`;
+    }
+  }
+  
+  // 별자리 설명 표시
+  if (zodiacDescEl && zodiacDescText) {
+  const zodiac = userBirthdate ? calculateZodiacSign(userBirthdate) : null;
+  savedFortunes.push({
+    text: fortuneText,
+    date: new Date().toLocaleDateString(),
+    zodiac: zodiac ? zodiac.name : '알 수 없음'
+  }
+}
+
+// eturn null;
 }
 
 // 채팅 메시지 추가
@@ -220,6 +258,8 @@ loginBtn.addEventListener('click', (e) => {
   authTitle.textContent = '로그인';
   authUserNameInput.style.display = 'none';
   authUserNameInput.required = false;
+  if (zodiacInfo) zodiacInfo.style.display = 'none';
+  if (zodiacDescEl) zodiacDescEl.style.display = 'none';
   authBirthdateInput.style.display = 'none';
   authBirthdateInput.required = false;
   authForm.dataset.mode = 'login';
@@ -309,6 +349,7 @@ authForm.addEventListener('submit', async (e) => {
           birthdateSection.style.display = 'block';
           
           // 별자리 계산 및 표시
+            updateZodiacUI(userBirthdate);
           const zodiac = calculateZodiacSign(userBirthdate);
           if (zodiac) {
             birthdateDisplay.textContent = `생년월일: ${userBirthdate} (${zodiac.name})`;
@@ -347,29 +388,7 @@ authForm.addEventListener('submit', async (e) => {
     authMessage.style.color = 'red';
     authMessage.textContent = '서버 통신 오류';
   }
-});
-
-// ========== 생년월일 설정 기능 제거됨 (DB에서만 가져옴) ==========
-
-// ========== 별자리 UI ==========
-
-zodiacSelectBtn.addEventListener('click', () => {
-  sidebarLeft.classList.toggle('open');
-});
-
-zodiacItems.forEach(item => {
-  item.addEventListener('click', () => {
-    const name = item.querySelector('strong').textContent;
-    const key = item.dataset.zodiac;
-
-    selectedZodiacText.textContent = name;
-    zodiacDescBox.textContent = zodiacDescriptions[key];
-
-    sidebarLeft.classList.remove('open');
-    
-    // 채팅 메시지로도 추가
-    if (authToken) {
-      const text = `${name} 운세 알려줘`;
+});선택 기능 제거됨 (DB 생년월일 기반 자동 표시) ==========   const text = `${name} 운세 알려줘`;
       userInput.value = text;
     }
   });
@@ -556,3 +575,5 @@ document.addEventListener('DOMContentLoaded', () => {
     birthdateSection.style.display = 'block';
   }
 });
+  updateZodiacUI(userBirthdate);
+    
