@@ -136,30 +136,8 @@ function addMessageToChat(role, content) {
   
   messageEl.appendChild(bubbleEl);
   
-  // AI 메시지일 경우 저장 버튼 추가
-  if (role === 'assistant' || role === 'ai') {
-    const saveBtn = document.createElement('button');
-    saveBtn.className = 'save-fortune-btn';
-    saveBtn.textContent = '⭐ 저장';
-    saveBtn.addEventListener('click', () => saveFortune(content));
-    messageEl.appendChild(saveBtn);
-  }
-  
   chatMessages.appendChild(messageEl);
   chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-// 운세 저장
-function saveFortune(fortuneText) {
-  let savedFortunes = JSON.parse(localStorage.getItem('savedFortunes')) || [];
-  const zodiac = userBirthdate ? calculateZodiacSign(userBirthdate) : null;
-  savedFortunes.push({
-    text: fortuneText,
-    date: new Date().toLocaleDateString(),
-    zodiac: zodiac ? zodiac.name : '알 수 없음'
-  });
-  localStorage.setItem('savedFortunes', JSON.stringify(savedFortunes));
-  alert('운세가 저장됐어요 ✨');
 }
 
 // 채팅 히스토리 저장/로드
@@ -440,31 +418,8 @@ async function sendMessage() {
       }
     }
 
-    // 저장 버튼 추가
-    const saveBtn = document.createElement('button');
-    saveBtn.className = 'save-fortune-btn';
-    saveBtn.textContent = '⭐ 저장';
-    saveBtn.addEventListener('click', () => saveFortune(responseText));
-    assistantMessageEl.appendChild(saveBtn);
-
     chatHistory.push({ role: 'assistant', content: responseText });
     saveHistory();
-
-    // AI 응답 서버에 저장
-    if (responseText && authToken) {
-      try {
-        await fetch('/api/chat/save-response', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({ aiResponse: responseText })
-        });
-      } catch (e) {
-        console.error('Failed to save AI response:', e);
-      }
-    }
 
   } catch (error) {
     console.error('Error:', error);
