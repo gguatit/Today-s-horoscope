@@ -1,139 +1,272 @@
 /**
- * LLM 채팅 앱 프론트엔드
- *
- * 채팅 UI 상호작용 및 백엔드 API와의 통신을 처리합니다.
+ * 운세 AI 챗봇 프론트엔드
+ * 현재 HTML 구조에 맞춘 재구성 버전
  */
 
-// DOM 요소들
-const chatMessages = document.getElementById("chat-messages");
-const userInput = document.getElementById("user-input");
-const sendButton = document.getElementById("send-button");
-const typingIndicator = document.getElementById("typing-indicator");
-const birthdateInput = document.getElementById("birthdate-input");
-const setBirthdateButton = document.getElementById("set-birthdate-button");
-const clearBirthdateButton = document.getElementById("clear-birthdate-button");
-const birthdateDisplay = document.getElementById("birthdate-display");
-const birthdateIncButton = document.getElementById("birthdate-inc");
-const birthdateDecButton = document.getElementById("birthdate-dec");
-// Target date (운세 날짜) elements
-const targetDateInput = document.getElementById("target-date-input");
-const targetDateDisplay = document.getElementById("target-date-display");
-const targetDateInc = document.getElementById("target-date-inc");
-const targetDateDec = document.getElementById("target-date-dec");
-const targetDateToday = document.getElementById("target-date-today");
-// Zodiac display elements
-const zodiacDisplay = document.getElementById("zodiac-display");
-const zodiacSign = document.getElementById("zodiac-sign");
-const zodiacDates = document.getElementById("zodiac-dates");
-// '오늘로 설정' 관련 코드 제거됨
+// ========== DOM 요소 ==========
+const chatMessages = document.getElementById('chat-messages');
+const userInput = document.getElementById('user-input');
+const sendButton = document.getElementById('send-button');
+const typingIndicator = document.getElementById('typing-indicator');
 
-// Auth elements
-const loginBtn = document.getElementById("login-btn");
-const signupBtn = document.getElementById("signup-btn");
-const logoutBtn = document.getElementById("logout-btn");
-const userInfo = document.getElementById("user-info");
-const authModal = document.getElementById("auth-modal");
-const authTitle = document.getElementById("auth-title");
-const authForm = document.getElementById("auth-form");
-const authUserIdInput = document.getElementById("auth-userid");
-const authUserNameInput = document.getElementById("auth-username");
-const authPasswordInput = document.getElementById("auth-password");
-const togglePasswordCheck = document.getElementById("toggle-password-check");
-const authBirthdateInput = document.getElementById("auth-birthdate");
-const authCancelBtn = document.getElementById("auth-cancel");
-const authMessage = document.getElementById("auth-message");
+// 생년월일 관련
+const birthdateSection = document.getElementById('birthdate-section');
+const birthdateDisplay = document.getElementById('birthdate-display');
 
-let authToken = localStorage.getItem("authToken");
-let authUser = localStorage.getItem("authUser");
-let authUserName = localStorage.getItem("authUserName");
+// 인증 관련
+const loginBtn = document.getElementById('login-btn');
+const signupBtn = document.getElementById('signup-btn');
+const logoutBtn = document.getElementById('logout-btn');
+const userInfo = document.getElementById('user-info');
+const authModal = document.getElementById('auth-modal');
+const authTitle = document.getElementById('auth-title');
+const authForm = document.getElementById('auth-form');
+const authUserIdInput = document.getElementById('auth-userid');
+const authUserNameInput = document.getElementById('auth-username');
+const authPasswordInput = document.getElementById('auth-password');
+const authBirthdateInput = document.getElementById('auth-birthdate');
+const authCancelBtn = document.getElementById('auth-cancel');
+const authMessage = document.getElementById('auth-message');
 
-if (togglePasswordCheck) {
-  togglePasswordCheck.addEventListener("change", () => {
-    authPasswordInput.setAttribute("type", togglePasswordCheck.checked ? "text" : "password");
-  });
+// 별자리 관련
+const zodiacSelectBtn = document.querySelector('.zodiac-select-btn');
+const sidebarLeft = document.querySelector('.sidebar-left');
+const zodiacItems = document.querySelectorAll('.zodiac-list li');
+const selectedZodiacText = document.querySelector('.selected-zodiac');
+const zodiacDescBox = document.querySelector('.zodiac-desc p');
+
+// 채팅 기록
+const chatHistoryItems = document.querySelectorAll('.chat-history li');
+
+// 오늘 날짜
+const todayDateEl = document.getElementById('today-date');
+
+// ========== 상태 변수 ==========
+let authToken = localStorage.getItem('authToken');
+let authUser = localStorage.getItem('authUser');
+let authUserName = localStorage.getItem('authUserName');
+let userBirthdate = localStorage.getItem('userBirthdate');
+let chatHistory = [];
+let isProcessing = false;
+
+// ========== 12별자리 데이터 ==========
+const ZODIAC_SIGNS = [
+  { name: "양자리", nameEn: "Aries", start: "0321", end: "0419" },
+  { name: "황소자리", nameEn: "Taurus", start: "0420", end: "0520" },
+  { name: "쌍둥이자리", nameEn: "Gemini", start: "0521", end: "0621" },
+  { name: "게자리", nameEn: "Cancer", start: "0622", end: "0722" },
+  { name: "사자자리", nameEn: "Leo", start: "0723", end: "0822" },
+  { name: "처녀자리", nameEn: "Virgo", start: "0823", end: "0923" },
+  { name: "천칭자리", nameEn: "Libra", start: "0924", end: "1022" },
+  { name: "전갈자리", nameEn: "Scorpio", start: "1023", end: "1122" },
+  { name: "사수자리", nameEn: "Sagittarius", start: "1123", end: "1221" },
+  { name: "염소자리", nameEn: "Capricorn", start: "1222", end: "0119" },
+  { name: "물병자리", nameEn: "Aquarius", start: "0120", end: "0218" },
+  { name: "물고기자리", nameEn: "Pisces", start: "0219", end: "0320" }
+];
+
+const zodiacDescriptions = {
+    aries: "도전과 열정이 강한 별자리로, 시작을 두려워하지 않는 성향이에요.",
+    taurus: "안정과 현실을 중시하며, 한 번 마음먹은 일은 끝까지 해내요.",
+    gemini: "호기심이 많고 소통을 즐기는 별자리로, 생각이 빠르게 변해요.",
+    cancer: "감정이 풍부하고 배려심이 깊은 별자리예요.",
+    leo: "자신감과 리더십이 강하며, 주목받는 것을 좋아해요.",
+    virgo: "섬세하고 분석적인 성향으로 완벽을 추구해요.",
+    libra: "균형과 조화를 중요하게 생각하는 사교적인 별자리예요.",
+    scorpio: "집중력과 직관이 뛰어나며 깊은 관계를 선호해요.",
+    sagittarius: "자유와 모험을 사랑하며 긍정적인 에너지가 강해요.",
+    capricorn: "책임감이 강하고 현실적인 목표를 중시해요.",
+    aquarius: "독창적이고 개방적인 사고를 가진 별자리예요.",
+    pisces: "상상력이 풍부하고 감수성이 뛰어난 별자리예요."
+};
+
+// ========== 유틸리티 함수 ==========
+
+// YYYYMMDD -> YYYY-MM-DD
+function formatBirthdate(val) {
+  if (!val || val.length !== 8) return null;
+  const y = val.substring(0, 4);
+  const m = val.substring(4, 6);
+  const d = val.substring(6, 8);
+  const numM = parseInt(m, 10);
+  const numD = parseInt(d, 10);
+  if (numM < 1 || numM > 12) return null;
+  if (numD < 1 || numD > 31) return null;
+  return `${y}-${m}-${d}`;
 }
 
-function updateAuthUI() {
-  if (authToken && authUserName) {
-    loginBtn.style.display = "none";
-    signupBtn.style.display = "none";
-    logoutBtn.style.display = "inline-block";
-    userInfo.style.display = "inline-block";
-    userInfo.textContent = `${authUserName}님`;
-    
-    // 로그인 상태: 채팅 기능 활성화
-    userInput.disabled = false;
-    sendButton.disabled = false;
-    userInput.placeholder = "메시지를 입력하세요...";
-  } else {
-    loginBtn.style.display = "inline-block";
-    signupBtn.style.display = "inline-block";
-    logoutBtn.style.display = "none";
-    userInfo.style.display = "none";
-    
-    // 로그아웃 상태: 채팅 기능 비활성화
-    userInput.disabled = true;
-    sendButton.disabled = true;
-    userInput.placeholder = "로그인이 필요합니다";
+// YYYY-MM-DD -> YYYYMMDD
+function unformatBirthdate(val) {
+  if (!val) return "";
+  return val.replace(/-/g, "");
+}
+
+// 별자리 계산
+function calculateZodiacSign(birthdate) {
+  if (!birthdate || birthdate.length !== 10) return null;
+  const mmdd = birthdate.substring(5).replace("-", "");
+  
+  for (const sign of ZODIAC_SIGNS) {
+    if (sign.start > sign.end) {
+      if (mmdd >= sign.start || mmdd <= sign.end) {
+        return sign;
+      }
+    } else {
+      if (mmdd >= sign.start && mmdd <= sign.end) {
+        return sign;
+      }
+    }
+  }
+  return null;
+}
+
+// 채팅 메시지 추가
+function addMessageToChat(role, content) {
+  const messageEl = document.createElement('div');
+  messageEl.className = `message ${role === 'user' ? 'user' : 'ai'}`;
+  
+  const bubbleEl = document.createElement('div');
+  bubbleEl.className = 'bubble';
+  bubbleEl.textContent = content;
+  
+  messageEl.appendChild(bubbleEl);
+  
+  // AI 메시지일 경우 저장 버튼 추가
+  if (role === 'assistant' || role === 'ai') {
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'save-fortune-btn';
+    saveBtn.textContent = '⭐ 저장';
+    saveBtn.addEventListener('click', () => saveFortune(content));
+    messageEl.appendChild(saveBtn);
+  }
+  
+  chatMessages.appendChild(messageEl);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// 운세 저장
+function saveFortune(fortuneText) {
+  let savedFortunes = JSON.parse(localStorage.getItem('savedFortunes')) || [];
+  savedFortunes.push({
+    text: fortuneText,
+    date: new Date().toLocaleDateString(),
+    zodiac: selectedZodiacText.textContent
+  });
+  localStorage.setItem('savedFortunes', JSON.stringify(savedFortunes));
+  alert('운세가 저장됐어요 ✨');
+}
+
+// 채팅 히스토리 저장/로드
+function saveHistory() {
+  localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+  if (userBirthdate) localStorage.setItem('userBirthdate', userBirthdate);
+}
+
+function loadHistory() {
+  const saved = localStorage.getItem('chatHistory');
+  if (saved) {
+    try {
+      chatHistory = JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to load history', e);
+      chatHistory = [];
+    }
   }
 }
 
-loginBtn.addEventListener("click", () => {
-  authModal.style.display = "flex";
-  authTitle.textContent = "로그인";
-  authUserNameInput.style.display = "none";
+// 오늘 날짜 업데이트
+function updateTodayDate() {
+  if (!todayDateEl) return;
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const weekday = weekdays[now.getDay()];
+  
+  todayDateEl.querySelector('p').textContent = `${year}.${month}.${day}`;
+  todayDateEl.querySelector('span').textContent = weekday;
+}
+
+// ========== 인증 UI ==========
+
+function updateAuthUI() {
+  if (authToken && authUserName) {
+    loginBtn.style.display = 'none';
+    signupBtn.style.display = 'none';
+    logoutBtn.style.display = 'inline-block';
+    userInfo.style.display = 'inline-block';
+    userInfo.textContent = `${authUserName}님`;
+    
+    userInput.disabled = false;
+    sendButton.disabled = false;
+    userInput.placeholder = '운세에 대해 물어보세요...';
+  } else {
+    loginBtn.style.display = 'inline-block';
+    signupBtn.style.display = 'inline-block';
+    logoutBtn.style.display = 'none';
+    userInfo.style.display = 'none';
+    
+    userInput.disabled = true;
+    sendButton.disabled = true;
+    userInput.placeholder = '로그인이 필요합니다';
+  }
+}
+
+// 로그인 버튼
+loginBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  authModal.style.display = 'flex';
+  authTitle.textContent = '로그인';
+  authUserNameInput.style.display = 'none';
   authUserNameInput.required = false;
-  authBirthdateInput.style.display = "none";
+  authBirthdateInput.style.display = 'none';
   authBirthdateInput.required = false;
-  authForm.dataset.mode = "login";
-  authMessage.textContent = "";
+  authForm.dataset.mode = 'login';
+  authMessage.textContent = '';
 });
 
-signupBtn.addEventListener("click", () => {
-  authModal.style.display = "flex";
-  authTitle.textContent = "회원가입";
-  authUserNameInput.style.display = "block";
+// 회원가입 버튼
+signupBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  authModal.style.display = 'flex';
+  authTitle.textContent = '회원가입';
+  authUserNameInput.style.display = 'block';
   authUserNameInput.required = true;
-  authBirthdateInput.style.display = "block";
-  authBirthdateInput.required = false; // Optional
-  authForm.dataset.mode = "signup";
-  authMessage.textContent = "";
+  authBirthdateInput.style.display = 'block';
+  authBirthdateInput.required = false;
+  authForm.dataset.mode = 'signup';
+  authMessage.textContent = '';
 });
 
-authCancelBtn.addEventListener("click", () => {
-  authModal.style.display = "none";
+// 취소 버튼
+authCancelBtn.addEventListener('click', () => {
+  authModal.style.display = 'none';
 });
 
-logoutBtn.addEventListener("click", () => {
+// 로그아웃 버튼
+logoutBtn.addEventListener('click', () => {
   authToken = null;
   authUser = null;
   authUserName = null;
-  localStorage.removeItem("authToken");
-  localStorage.removeItem("authUser");
-  localStorage.removeItem("authUserName");
-  // Clear birthdate if it came from user profile
-  // But maybe user wants to keep it? Let's keep it for now or clear it?
-  // Let's clear it to be safe
   userBirthdate = null;
-  localStorage.removeItem("userBirthdate");
-  if (birthdateDisplay) birthdateDisplay.textContent = "";
-  if (birthdateInput) birthdateInput.value = "";
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('authUser');
+  localStorage.removeItem('authUserName');
+  localStorage.removeItem('userBirthdate');
+  localStorage.removeItem('chatHistory');
   
-  // 대화 내용 삭제
-  chatHistory = [
-    {
-      role: "assistant",
-      content: "안녕하세요! 저는 생년월일을 기반으로 운세를 알려드리는 한국어 전용 도우미입니다. 생년월일을 입력하거나 UI에서 설정하시면 띠 기반의 오늘의 운세 및 간단한 추천 행동을 한국어로 안내해 드립니다.",
-    },
-  ];
-  localStorage.removeItem("chatHistory");
-  chatMessages.innerHTML = "";
+  birthdateDisplay.textContent = '';
+  birthdateSection.style.display = 'none';
+  chatHistory = [];
+  chatMessages.innerHTML = '';
   
+  addMessageToChat('ai', '로그아웃되었습니다.');
   updateAuthUI();
-  addMessageToChat("assistant", "로그아웃되었습니다. 대화 내용이 삭제되었습니다.");
 });
 
-authForm.addEventListener("submit", async (e) => {
+// 인증 폼 제출
+authForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const mode = authForm.dataset.mode;
   const userId = authUserIdInput.value;
@@ -146,741 +279,258 @@ authForm.addEventListener("submit", async (e) => {
     birthdate = formatBirthdate(birthdateRaw);
   }
 
-  const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register";
+  const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
   
   try {
-    const body = mode === "login" 
+    const body = mode === 'login' 
       ? { userId, password } 
       : { userId, userName, password, birthdate };
     
     const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
     
     if (res.ok) {
       const data = await res.json();
-      if (mode === "login") {
+      if (mode === 'login') {
         authToken = data.token;
         authUser = data.userId;
         authUserName = data.userName;
-        localStorage.setItem("authToken", authToken);
-        localStorage.setItem("authUser", authUser);
-        localStorage.setItem("authUserName", authUserName);
+        localStorage.setItem('authToken', authToken);
+        localStorage.setItem('authUser', authUser);
+        localStorage.setItem('authUserName', authUserName);
         
         if (data.birthdate) {
           userBirthdate = data.birthdate;
-          localStorage.setItem("userBirthdate", userBirthdate);
-          if (birthdateDisplay) birthdateDisplay.textContent = `생년월일: ${userBirthdate}`;
-          if (birthdateInput) birthdateInput.value = unformatBirthdate(userBirthdate);
-          updateZodiacDisplay(userBirthdate);
+          localStorage.setItem('userBirthdate', userBirthdate);
+          birthdateDisplay.textContent = `생년월일: ${userBirthdate}`;
+          birthdateSection.style.display = 'block';
+          
+          // 별자리 계산 및 표시
+          const zodiac = calculateZodiacSign(userBirthdate);
+          if (zodiac) {
+            birthdateDisplay.textContent = `생년월일: ${userBirthdate} (${zodiac.name})`;
+          }
         }
-        
-        // 로그인 시 대화 내용 삭제
-        chatHistory = [
-          {
-            role: "assistant",
-            content: "안녕하세요! 저는 생년월일을 기반으로 운세를 알려드리는 한국어 전용 도우미입니다. 생년월일을 입력하거나 UI에서 설정하시면 띠 기반의 오늘의 운세 및 간단한 추천 행동을 한국어로 안내해 드립니다.",
-          },
-        ];
-        localStorage.removeItem("chatHistory");
-        chatMessages.innerHTML = "";
+        if (userBirthdate) {
+          addMessageToChat('ai', `${authUserName}님, 환영합니다! 운세를 물어보세요.`);
+        } else {
+          addMessageToChat('ai', `${authUserName}님, 환영합니다! 회원가입 시 생년월일을 입력하시면 더 정확한 운세를 받을 수 있습니다.`);
+        }
+        chatHistory = [];
+        chatMessages.innerHTML = '';
         
         updateAuthUI();
-        authModal.style.display = "none";
-        addMessageToChat("assistant", `${authUserName}님, 환영합니다!`);
+        authModal.style.display = 'none';
+        addMessageToChat('ai', `${authUserName}님, 환영합니다! 생년월일을 설정하고 운세를 물어보세요.`);
       } else {
-        // Signup success, switch to login
-        authMessage.style.color = "green";
-        authMessage.textContent = "회원가입 성공! 로그인해주세요.";
+        authMessage.style.color = 'green';
+        authMessage.textContent = '회원가입 성공! 로그인해주세요.';
         setTimeout(() => {
-            authTitle.textContent = "로그인";
-            authUserNameInput.style.display = "none";
-            authUserNameInput.required = false;
-            authBirthdateInput.style.display = "none";
-            authForm.dataset.mode = "login";
-            authMessage.textContent = "";
-            authPasswordInput.value = "";
+          authTitle.textContent = '로그인';
+          authUserNameInput.style.display = 'none';
+          authUserNameInput.required = false;
+          authBirthdateInput.style.display = 'none';
+          authForm.dataset.mode = 'login';
+          authMessage.textContent = '';
+          authPasswordInput.value = '';
         }, 1500);
       }
     } else {
       const errText = await res.text();
-      authMessage.style.color = "red";
+      authMessage.style.color = 'red';
       authMessage.textContent = `오류: ${errText}`;
-      // Visual feedback
-      if (mode === "login") {
-          authUsernameInput.style.borderColor = "red";
-          authPasswordInput.style.borderColor = "red";
-          setTimeout(() => {
-              authUsernameInput.style.borderColor = "#ddd";
-              authPasswordInput.style.borderColor = "#ddd";
-          }, 2000);
-      }
     }
   } catch (err) {
-    authMessage.style.color = "red";
-    authMessage.textContent = "서버 통신 오류";
+    authMessage.style.color = 'red';
+    authMessage.textContent = '서버 통신 오류';
   }
 });
 
-// 채팅 상태
-let chatHistory = [
-  {
-    role: "assistant",
-    content:
-      "안녕하세요! 저는 생년월일을 기반으로 운세를 알려드리는 한국어 전용 도우미입니다. 생년월일을 입력하거나 UI에서 설정하시면 띠 기반의 오늘의 운세 및 간단한 추천 행동을 한국어로 안내해 드립니다.",
-  },
-];
-let userBirthdate = null; // YYYY-MM-DD
-let userTargetDate = null; // YYYY-MM-DD (date for which to compute horoscope - defaults to today)
-let isProcessing = false;
+// ========== 생년월일 설정 기능 제거됨 (DB에서만 가져옴) ==========
 
-// 로컬 스토리지에서 히스토리 로드
-function loadHistory() {
-  const saved = localStorage.getItem("chatHistory");
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        chatHistory = parsed;
-        // Rebuild UI
-        chatMessages.innerHTML = "";
-        chatHistory.forEach(msg => {
-          if (msg.role !== "system" && !msg.content.startsWith("[운세|") && !msg.content.startsWith("[생년월일]") && !msg.content.startsWith("[운세날짜]")) {
-             addMessageToChat(msg.role, msg.content);
-          }
-        });
-        // Add initial message if empty
-        if (chatMessages.children.length === 0) {
-             addMessageToChat("assistant", "안녕하세요! 저는 생년월일을 기반으로 운세를 알려드리는 한국어 전용 도우미입니다. 생년월일을 입력하거나 UI에서 설정하시면 띠 기반의 오늘의 운세 및 간단한 추천 행동을 한국어로 안내해 드립니다.");
-        }
-      }
-    } catch (e) {
-      console.error("Failed to load history", e);
-    }
-  }
-  
-  const savedBirthdate = localStorage.getItem("userBirthdate");
-  if (savedBirthdate) {
-    userBirthdate = savedBirthdate;
-    if (birthdateDisplay) birthdateDisplay.textContent = `생년월일: ${userBirthdate}`;
-    if (birthdateInput) birthdateInput.value = unformatBirthdate(userBirthdate);
-    updateZodiacDisplay(userBirthdate);
-  }
-}
+// ========== 별자리 UI ==========
 
-function saveHistory() {
-  localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
-  if (userBirthdate) localStorage.setItem("userBirthdate", userBirthdate);
-  else localStorage.removeItem("userBirthdate");
-}
-
-// Initialize birthdate UI for mobile fallback
-
-
-// Helper: Convert YYYYMMDD to YYYY-MM-DD
-function formatBirthdate(val) {
-  if (!val || val.length !== 8) return null;
-  const y = val.substring(0, 4);
-  const m = val.substring(4, 6);
-  const d = val.substring(6, 8);
-  // Basic validation
-  const numM = parseInt(m, 10);
-  const numD = parseInt(d, 10);
-  if (numM < 1 || numM > 12) return null;
-  if (numD < 1 || numD > 31) return null;
-  return `${y}-${m}-${d}`;
-}
-
-// Helper: Convert YYYY-MM-DD to YYYYMMDD
-function unformatBirthdate(val) {
-  if (!val) return "";
-  return val.replace(/-/g, "");
-}
-
-/**
- * 12별자리 데이터 배열 (백엔드 src/types.ts와 동일)
- * 
- * 주의사항:
- * - 백엔드와 프론트엔드의 데이터가 일치해야 함
- * - 날짜 범위 수정 시 양쪽 모두 수정 필요
- * - icon 속성은 프론트엔드 전용 (현재 미사용)
- */
-const ZODIAC_SIGNS = [
-  { name: "양자리", nameEn: "Aries", start: "0321", end: "0419", icon: "♈" },
-  { name: "황소자리", nameEn: "Taurus", start: "0420", end: "0520", icon: "♉" },
-  { name: "쌍둥이자리", nameEn: "Gemini", start: "0521", end: "0621", icon: "♊" },
-  { name: "게자리", nameEn: "Cancer", start: "0622", end: "0722", icon: "♋" },
-  { name: "사자자리", nameEn: "Leo", start: "0723", end: "0822", icon: "♌" },
-  { name: "처녀자리", nameEn: "Virgo", start: "0823", end: "0923", icon: "♍" },
-  { name: "천칭자리", nameEn: "Libra", start: "0924", end: "1022", icon: "♎" },
-  { name: "전갈자리", nameEn: "Scorpio", start: "1023", end: "1122", icon: "♏" },
-  { name: "사수자리", nameEn: "Sagittarius", start: "1123", end: "1221", icon: "♐" },
-  { name: "염소자리", nameEn: "Capricorn", start: "1222", end: "0119", icon: "♑" },  // 연도 경계 주의!
-  { name: "물병자리", nameEn: "Aquarius", start: "0120", end: "0218", icon: "♒" },
-  { name: "물고기자리", nameEn: "Pisces", start: "0219", end: "0320", icon: "♓" }
-];
-
-/**
- * 생년월일로 12별자리 계산 (클라이언트 사이드)
- * 
- * @param {string} birthdate - 생년월일 (YYYY-MM-DD 형식)
- * @returns {object|null} - 별자리 객체 또는 null
- * 
- * 동작:
- * - 백엔드의 calculateZodiacSign()과 동일한 로직
- * - UI에 별자리 표시하기 위해 사용
- * - 백엔드는 AI에게 전달할 정보 생성, 프론트는 사용자에게 시각적 피드백
- */
-function calculateZodiacSign(birthdate) {
-  // 입력 검증
-  if (!birthdate || birthdate.length !== 10) return null;
-  
-  // "1990-03-21"에서 "0321" 추출
-  const mmdd = birthdate.substring(5).replace("-", "");
-  
-  // 12별자리 순회하며 날짜 범위 확인
-  for (const sign of ZODIAC_SIGNS) {
-    // 연도 경계 케이스: 염소자리(12/22~1/19)처럼 start > end인 경우
-    if (sign.start > sign.end) {
-      // OR 조건: 12월 이후 또는 1월 이전
-      if (mmdd >= sign.start || mmdd <= sign.end) {
-        return sign;
-      }
-    } else {
-      // 일반 케이스: 같은 연도 내 범위
-      if (mmdd >= sign.start && mmdd <= sign.end) {
-        return sign;
-      }
-    }
-  }
-  
-  return null;
-}
-
-/**
- * 별자리 표시 UI 업데이트
- * 
- * @param {string} birthdate - 생년월일 (YYYY-MM-DD 형식)
- * 
- * 동작:
- * 1. 생년월일로 별자리 계산
- * 2. zodiac-display 요소에 별자리명과 날짜 범위 표시
- * 3. 계산 실패 시 UI 숨김
- * 
- * 호출 시점:
- * - 생년월일 설정 버튼 클릭 시
- * - 로그인 후 사용자 생년월일 로드 시
- * - LocalStorage에서 기존 생년월일 복원 시
- */
-function updateZodiacDisplay(birthdate) {
-  // DOM 요소 존재 확인
-  if (!zodiacDisplay || !zodiacSign || !zodiacDates) return;
-  
-  // 별자리 계산
-  const zodiac = calculateZodiacSign(birthdate);
-  
-  if (zodiac) {
-    // 별자리 정보 표시
-    zodiacDisplay.style.display = "flex";
-    zodiacSign.textContent = `${zodiac.name} (${zodiac.nameEn})`;  // 예: "양자리 (Aries)"
-    zodiacDates.textContent = `${zodiac.start.substring(0,2)}/${zodiac.start.substring(2)} - ${zodiac.end.substring(0,2)}/${zodiac.end.substring(2)}`;  // 예: "03/21 - 04/19"
-  } else {
-    // 계산 실패 시 숨김
-    zodiacDisplay.style.display = "none";
-  }
-}
-
-// add or subtract days/months/years from a date string YYYY-MM-DD
-function adjustDateString(dateStr, { days = 0, months = 0, years = 0 }) {
-  let d;
-  if (!dateStr) d = new Date(); else d = new Date(dateStr + "T00:00:00");
-  if (years !== 0) d.setFullYear(d.getFullYear() + years);
-  if (months !== 0) d.setMonth(d.getMonth() + months);
-  if (days !== 0) d.setDate(d.getDate() + days);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-function addDaysToInput(days) {
-  if (!birthdateInput) return;
-  // Current value in input is YYYYMMDD, userBirthdate is YYYY-MM-DD
-  let current = userBirthdate || null;
-  
-  // If user manually typed something valid in input but didn't click set, try to use it
-  if (birthdateInput.value && birthdateInput.value.length === 8) {
-      const formatted = formatBirthdate(birthdateInput.value);
-      if (formatted) current = formatted;
-  }
-
-  const next = adjustDateString(current, { days });
-  userBirthdate = next; // Update internal state immediately for buttons
-  birthdateInput.value = unformatBirthdate(next);
-  
-  if (birthdateDisplay) birthdateDisplay.textContent = `생년월일: ${next}`;
-}
-
-// Initialize UI on load
-document.addEventListener("DOMContentLoaded", () => {
-  loadHistory();
-  updateAuthUI();
+zodiacSelectBtn.addEventListener('click', () => {
+  sidebarLeft.classList.toggle('open');
 });
 
-// Mobile UX: When input or birthdate inputs have focus, ensure the chat scrolls to bottom
-function ensureScrollToBottomLater() {
-  setTimeout(() => { if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight; }, 350);
-}
+zodiacItems.forEach(item => {
+  item.addEventListener('click', () => {
+    const name = item.querySelector('strong').textContent;
+    const key = item.dataset.zodiac;
 
-if (userInput) {
-  userInput.addEventListener('focus', ensureScrollToBottomLater);
-}
-if (birthdateInput) {
-  birthdateInput.addEventListener('focus', ensureScrollToBottomLater);
-}
-if (targetDateInput) {
-  targetDateInput.addEventListener('focus', ensureScrollToBottomLater);
-}
+    selectedZodiacText.textContent = name;
+    zodiacDescBox.textContent = zodiacDescriptions[key];
 
-// Allow tapping the messages area to focus the input on mobile
-if (chatMessages) {
-  chatMessages.addEventListener('click', () => {
-    try { if (userInput) userInput.focus(); } catch (e) {}
-    ensureScrollToBottomLater();
-  });
-}
-
-// Mobile toolbar handlers
-const toolbarDob = document.getElementById('toolbar-dob');
-const toolbarFocus = document.getElementById('toolbar-focus');
-
-if (toolbarDob) {
-  toolbarDob.addEventListener('click', () => {
-    // If native date input is shown, focus it; otherwise toggle selects visibility
-    if (birthdateInput && birthdateInput.style.display !== 'none') {
-      try { birthdateInput.focus(); } catch (e) {}
-    }
-  });
-}
-
-if (toolbarFocus) {
-  toolbarFocus.addEventListener('click', () => {
-    try { if (userInput) userInput.focus(); } catch (e) {}
-    ensureScrollToBottomLater();
-  });
-}
-
-// Initialize target date to today
-function todayStr() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-if (targetDateInput) {
-  const defaultToday = todayStr();
-  targetDateInput.value = defaultToday;
-  userTargetDate = defaultToday;
-  if (targetDateDisplay) targetDateDisplay.textContent = `운세 날짜: ${defaultToday}`;
-  targetDateInput.addEventListener("change", () => {
-    if (targetDateInput.value) {
-      userTargetDate = targetDateInput.value;
-      if (targetDateDisplay) targetDateDisplay.textContent = `운세 날짜: ${targetDateInput.value}`;
-    }
-  });
-}
-
-// Update display when native date input changes
-if (birthdateInput) {
-  birthdateInput.addEventListener("input", () => {
-    // Allow only numbers
-    birthdateInput.value = birthdateInput.value.replace(/[^0-9]/g, '');
+    sidebarLeft.classList.remove('open');
     
-    if (birthdateInput.value.length === 8) {
-      const formatted = formatBirthdate(birthdateInput.value);
-      if (formatted && birthdateDisplay) {
-        birthdateDisplay.textContent = `생년월일: ${formatted}`;
-      } else if (birthdateDisplay) {
-        birthdateDisplay.textContent = `생년월일: (유효하지 않음)`;
-      }
-    } else {
-        if (birthdateDisplay) birthdateDisplay.textContent = `생년월일: 입력중...`;
+    // 채팅 메시지로도 추가
+    if (authToken) {
+      const text = `${name} 운세 알려줘`;
+      userInput.value = text;
     }
   });
-}
-
-// Auto-resize textarea as user types
-userInput.addEventListener("input", function () {
-  this.style.height = "auto";
-  this.style.height = this.scrollHeight + "px";
 });
 
-// Send message on Enter (without Shift)
-userInput.addEventListener("keydown", function (e) {
-  if (e.key === "Enter" && !e.shiftKey) {
+// ========== 채팅 기록 UI ==========
+
+chatHistoryItems.forEach(item => {
+  item.addEventListener('click', () => {
+    if (!authToken) {
+      addMessageToChat('ai', '로그인 후 이용하실 수 있습니다.');
+      return;
+    }
+    const text = item.textContent;
+    userInput.value = text;
+    userInput.focus();
+  });
+});
+
+// ========== 메시지 전송 ==========
+
+sendButton.addEventListener('click', sendMessage);
+userInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     sendMessage();
   }
 });
 
-// Send button click handler
-sendButton.addEventListener("click", sendMessage);
-
-// Birthdate buttons
-if (setBirthdateButton && birthdateInput) {
-  setBirthdateButton.addEventListener("click", () => {
-    // Determine date source depending on native support
-    let val = "";
-    if (birthdateInput && birthdateInput.value) {
-      // Try to parse YYYYMMDD
-      if (birthdateInput.value.length === 8) {
-          val = formatBirthdate(birthdateInput.value);
-      }
-    }
-    
-    if (!val) {
-        addMessageToChat("assistant", "생년월일을 올바른 형식(YYYYMMDD, 예: 20080301)으로 입력해주세요.");
-        return;
-    }
-    
-    userBirthdate = val; // YYYY-MM-DD
-    
-    // Update display
-    if (birthdateDisplay) birthdateDisplay.textContent = `생년월일: ${val}`;
-    
-    // Update zodiac display
-    updateZodiacDisplay(val);
-
-    // Add or replace profile entry in chat history
-    const profileIndex = chatHistory.findIndex((m) => m.content && m.content.startsWith("[생년월일]"));
-    const profileMsg = { role: "user", content: `[생년월일] ${val}` };
-    if (profileIndex === -1) {
-      // insert after initial assistant message
-      chatHistory.splice(1, 0, profileMsg);
-      addMessageToChat("assistant", `생년월일이 저장되었습니다: ${val}`);
-    } else {
-      chatHistory[profileIndex] = profileMsg;
-      addMessageToChat("assistant", `생년월일이 업데이트되었습니다: ${val}`);
-    }
-    saveHistory();
-  });
-}
-
-if (clearBirthdateButton) {
-  clearBirthdateButton.addEventListener("click", () => {
-    userBirthdate = null;
-    if (birthdateDisplay) birthdateDisplay.textContent = "";
-    if (zodiacDisplay) zodiacDisplay.style.display = "none";
-    // Remove profile from chat history
-    const profileIndex = chatHistory.findIndex((m) => m.content && m.content.startsWith("[생년월일]"));
-    if (profileIndex !== -1) {
-      chatHistory.splice(profileIndex, 1);
-    }
-    addMessageToChat("assistant", `생년월일이 삭제되었습니다.`);
-    saveHistory();
-  });
-}
-
-// Set and clear target date (manual controls)
-if (targetDateDec) {
-  targetDateDec.addEventListener("click", () => addDaysToTarget(-1));
-}
-if (targetDateInc) {
-  targetDateInc.addEventListener("click", () => addDaysToTarget(1));
-}
-
-if (targetDateToday) {
-  targetDateToday.addEventListener("click", () => {
-    const today = todayStr();
-    if (targetDateInput) targetDateInput.value = today;
-    userTargetDate = today;
-    if (targetDateDisplay) targetDateDisplay.textContent = `운세 날짜: ${today}`;
-  });
-}
-
-function addDaysToTarget(days) {
-  if (!targetDateInput) return;
-  const current = targetDateInput.value || userTargetDate || todayStr();
-  const next = adjustDateString(current, { days });
-  targetDateInput.value = next;
-  userTargetDate = next;
-  if (targetDateDisplay) targetDateDisplay.textContent = `운세 날짜: ${next}`;
-}
-
-// Desktop increment / decrement buttons behavior
-if (birthdateIncButton) {
-  birthdateIncButton.addEventListener("click", () => {
-    addDaysToInput(1);
-  });
-}
-if (birthdateDecButton) {
-  birthdateDecButton.addEventListener("click", () => {
-    addDaysToInput(-1);
-  });
-}
-
-// Keyboard shortcuts when focusing date input
-if (birthdateInput) {
-  birthdateInput.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (e.shiftKey) addDaysToInput(30); // shift+up -> next month approx
-      else if (e.ctrlKey || e.metaKey) addDaysToInput(365); // ctrl+up -> next year
-      else addDaysToInput(1);
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (e.shiftKey) addDaysToInput(-30);
-      else if (e.ctrlKey || e.metaKey) addDaysToInput(-365);
-      else addDaysToInput(-1);
-    }
-  });
-}
-
-// 관련 코드 삭제 완료
-
-/**
- * 채팅 API로 메시지를 전송하고 응답을 처리합니다
- */
 async function sendMessage() {
   const message = userInput.value.trim();
 
-  // 인증 확인
   if (!authToken) {
-    addMessageToChat("assistant", "로그인이 필요합니다. 로그인 후 다시 시도해주세요.");
+    addMessageToChat('ai', '로그인이 필요합니다.');
     return;
   }
 
-  // Don't send empty messages
-  if (message === "" || isProcessing) return;
+  if (message === '' || isProcessing) return;
 
-  // Warn if message doesn't contain Korean characters
+  // 한국어 검증
   if (!/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(message)) {
-    addMessageToChat(
-      "assistant",
-      "알림: 이 챗봇은 한국어 전용입니다. 메시지를 한국어로 입력해 주세요. (자동으로 한국어로 답변을 시도하겠지만, 최상의 결과를 위해 한국어로 입력해 주세요.)",
-    );
-    // reset and exit
-    userInput.value = "";
-    userInput.style.height = "auto";
-    isProcessing = false;
-    userInput.disabled = false;
-    sendButton.disabled = false;
+    addMessageToChat('ai', '이 챗봇은 한국어 전용입니다. 한국어로 입력해 주세요.');
+    userInput.value = '';
     return;
   }
 
-
-
-  // Disable input while processing
   isProcessing = true;
   userInput.disabled = true;
   sendButton.disabled = true;
 
-  // Add user message to chat
-  addMessageToChat("user", message);
+  addMessageToChat('user', message);
+  userInput.value = '';
 
-  // Clear input
-  userInput.value = "";
-  userInput.style.height = "auto";
+  typingIndicator.style.display = 'block';
 
-  // Show typing indicator
-  typingIndicator.classList.add("visible");
+  chatHistory.push({ role: 'user', content: message });
 
-  // Add message to history
-  chatHistory.push({ role: "user", content: message });
-  saveHistory();
-
-  // Ensure DOB and Target Date are in the history so the assistant can reference both
-  // Add [생년월일] if userBirthdate present and no such message exists
+  // 생년월일 추가
   if (userBirthdate) {
-    const existingDob = chatHistory.some((m) => m.role === "user" && m.content && m.content.startsWith("[생년월일]"));
+    const existingDob = chatHistory.some((m) => m.role === 'user' && m.content && m.content.startsWith('[생년월일]'));
     if (!existingDob) {
-      chatHistory.splice(1, 0, { role: "user", content: `[생년월일] ${userBirthdate}` });
+      chatHistory.unshift({ role: 'user', content: `[생년월일] ${userBirthdate}` });
     }
   }
-  // Add [운세날짜] target date if present and not already in history
-  if (userTargetDate) {
-    const existingTarget = chatHistory.some((m) => m.role === "user" && m.content && m.content.startsWith("[운세날짜]"));
-    if (!existingTarget) {
-      chatHistory.splice(2, 0, { role: "user", content: `[운세날짜] ${userTargetDate}` });
-    }
-  }
-
-
 
   try {
-    // Create new assistant response element
-    const assistantMessageEl = document.createElement("div");
-    assistantMessageEl.className = "message assistant-message";
-    assistantMessageEl.innerHTML = "<p></p>";
-    chatMessages.appendChild(assistantMessageEl);
-
-    // Scroll to bottom
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-
-    // Send request to API
-    const response = await fetch("/api/chat", {
-      method: "POST",
+    const response = await fetch('/api/chat', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${authToken}`
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
       },
-      body: JSON.stringify({
-          messages: chatHistory,
-      }),
+      body: JSON.stringify({ messages: chatHistory }),
     });
 
-    // Handle errors
     if (!response.ok) {
       if (response.status === 401) {
-        // 인증 토큰이 만료되거나 유효하지 않음
         authToken = null;
         authUser = null;
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("authUser");
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('authUser');
         updateAuthUI();
-        addMessageToChat("assistant", "세션이 만료되었습니다. 다시 로그인해주세요.");
-        typingIndicator.classList.remove("visible");
+        addMessageToChat('ai', '세션이 만료되었습니다. 다시 로그인해주세요.');
+        typingIndicator.style.display = 'none';
         isProcessing = false;
         return;
       }
-      throw new Error("Failed to get response");
+      throw new Error('Failed to get response');
     }
 
-    // sanitize flag
-    let sanitizedOnce = false;
-    const containsForbiddenScript = (text) => /[A-Za-z\u0400-\u04FF\u3040-\u30FF\u4E00-\u9FFF]/.test(text);
+    const assistantMessageEl = document.createElement('div');
+    assistantMessageEl.className = 'message ai';
+    const bubbleEl = document.createElement('div');
+    bubbleEl.className = 'bubble';
+    assistantMessageEl.appendChild(bubbleEl);
+    chatMessages.appendChild(assistantMessageEl);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    // Process streaming response
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    let responseText = "";
+    let responseText = '';
 
     while (true) {
       const { done, value } = await reader.read();
+      if (done) break;
 
-      if (done) {
-        break;
-      }
-
-      // Decode chunk
       const chunk = decoder.decode(value, { stream: true });
-
-      // Process SSE format
-      const lines = chunk.split("\n");
+      const lines = chunk.split('\n');
+      
       for (const line of lines) {
         if (!line.trim()) continue;
         let jsonStr = line;
-        if (line.startsWith("data: ")) {
+        if (line.startsWith('data: ')) {
           jsonStr = line.slice(6);
         }
-        if (jsonStr.trim() === "[DONE]") continue;
+        if (jsonStr.trim() === '[DONE]') continue;
 
         try {
           const jsonData = JSON.parse(jsonStr);
           if (jsonData.response) {
-            // Append new content to existing text
             responseText += jsonData.response;
-            assistantMessageEl.querySelector("p").textContent = responseText;
-
-            // Scroll to bottom
+            bubbleEl.textContent = responseText;
             chatMessages.scrollTop = chatMessages.scrollHeight;
           }
         } catch (e) {
-          // console.error("Error parsing JSON:", e);
+          // 파싱 오류 무시
         }
       }
     }
 
-    chatHistory.push({ role: "assistant", content: responseText });
+    // 저장 버튼 추가
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'save-fortune-btn';
+    saveBtn.textContent = '⭐ 저장';
+    saveBtn.addEventListener('click', () => saveFortune(responseText));
+    assistantMessageEl.appendChild(saveBtn);
+
+    chatHistory.push({ role: 'assistant', content: responseText });
     saveHistory();
 
-    // AI 응답을 서버에 저장
+    // AI 응답 서버에 저장
     if (responseText && authToken) {
       try {
-        await fetch("/api/chat/save-response", {
-          method: "POST",
+        await fetch('/api/chat/save-response', {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${authToken}`
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
           },
           body: JSON.stringify({ aiResponse: responseText })
         });
       } catch (e) {
-        console.error("Failed to save AI response:", e);
+        console.error('Failed to save AI response:', e);
       }
     }
 
-    // If response contains forbidden scripts (e.g., 한자/일본어/라틴/키릴), request a rewrite once
-    if (containsForbiddenScript(responseText) && !sanitizedOnce) {
-      sanitizedOnce = true;
-      // Briefly notify user that we are auto-correcting
-      addMessageToChat("assistant", "응답에 외래 문자 또는 섞인 문자가 포함되어 있어 자동으로 한글로 재작성 요청합니다...");
-
-      // Add a user instruction to re-write the assistant content in Korean only
-      const rewriteInstruction = {
-        role: "user",
-        content: `다음 텍스트를 한글(한글+숫자+기호)만 사용하여 재작성해 주세요. 원문: ${responseText}`,
-      };
-      // Push rewrite instruction to history and request a corrected response
-      chatHistory.push(rewriteInstruction);
-
-      // Fetch corrected response (synchronous: not streaming to keep it simple)
-      try {
-        const correctedResp = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: chatHistory }),
-        });
-        if (correctedResp.ok) {
-          const correctedText = await correctedResp.text();
-          // correctedResp returns streaming SSE lines, but for simplicity, if backend returns streaming SSE, it may not be parsed here.
-          // If it's raw text, parse JSON or fallback to plain text.
-          // We'll try to extract any JSON lines with 'response' fields.
-          let corrected = "";
-          try {
-            const parts = correctedText.split("\n");
-            for (const p of parts) {
-              try {
-                const j = JSON.parse(p);
-                if (j.response) corrected += j.response;
-              } catch (e) {
-                // ignore
-              }
-            }
-          } catch (e) {
-            corrected = correctedText;
-          }
-          if (!corrected) corrected = responseText; // fallback
-          // Replace assistant message with corrected
-          assistantMessageEl.querySelector("p").textContent = corrected;
-          // Add corrected message to chat history
-          chatHistory.push({ role: "assistant", content: corrected });
-        } else {
-          // could not fetch corrected response – keep original
-          chatHistory.push({ role: "assistant", content: responseText });
-        }
-      } catch (e) {
-        console.error("Error fetching corrected response:", e);
-        chatHistory.push({ role: "assistant", content: responseText });
-      }
-    } else {
-      // Add completed response to chat history
-      chatHistory.push({ role: "assistant", content: responseText });
-    }
   } catch (error) {
-    console.error("Error:", error);
-    addMessageToChat(
-      "assistant",
-      "Sorry, there was an error processing your request.",
-    );
+    console.error('Error:', error);
+    addMessageToChat('ai', '오류가 발생했습니다. 다시 시도해주세요.');
   } finally {
-    // Hide typing indicator
-    typingIndicator.classList.remove("visible");
-
-    // Re-enable input
+    typingIndicator.style.display = 'none';
     isProcessing = false;
     userInput.disabled = false;
     sendButton.disabled = false;
@@ -888,15 +538,21 @@ async function sendMessage() {
   }
 }
 
-/**
- * 채팅에 메시지를 추가하는 헬퍼 함수
- */
-function addMessageToChat(role, content) {
-  const messageEl = document.createElement("div");
-  messageEl.className = `message ${role}-message`;
-  messageEl.innerHTML = `<p>${content}</p>`;
-  chatMessages.appendChild(messageEl);
+// ========== 초기화 ==========
 
-  // Scroll to bottom
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
+document.addEventListener('DOMContentLoaded', () => {
+  loadHistory();
+  updateAuthUI();
+  updateTodayDate();
+  
+  // 생년월일이 저장되어 있으면 표시
+  if (userBirthdate) {
+    const zodiac = calculateZodiacSign(userBirthdate);
+    if (zodiac) {
+      birthdateDisplay.textContent = `생년월일: ${userBirthdate} (${zodiac.name})`;
+    } else {
+      birthdateDisplay.textContent = `생년월일: ${userBirthdate}`;
+    }
+    birthdateSection.style.display = 'block';
+  }
+});

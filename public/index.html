@@ -1,131 +1,172 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#f6821f" />
-    <title>오늘의 운세 - AI 챗봇</title>
-    <link rel="stylesheet" href="css/styles.css" />
-  </head>
-  <body>
-    <header>
-      <div class="header-top">
-        <h1>Cloudflare AI 채팅</h1>
-        <div id="auth-container">
-          <button id="login-btn" class="btn-small">로그인</button>
-          <button id="signup-btn" class="btn-small">회원가입</button>
-          <span id="user-info"></span>
-          <button id="logout-btn" class="btn-small">로그아웃</button>
-        </div>
-      </div>
-      <p>Cloudflare Workers AI로 구동됩니다</p>
-      <div class="header-info">
-        <div class="header-info-main"> 
-          <strong>안내: 한국어 전용 챗봇</strong>
-          <small>입력은 한국어로 해 주십시오. 운세는 생년월일을 기준으로 간단하게 안내합니다.</small>
-        </div>
-        <details id="system-instructions">
-          <summary>사용 방법</summary>
-          <div>
-            <ul>
-              <li>생년월일을 설정한 다음, <code>오늘 운세 알려줘</code> 라고 입력하세요.</li>
-              <li>운세를 요청하려면 '운세 요청'을 체크하고 원하는 '운세 타입'을 선택하세요.</li>
-              <li>예: <code>[생년월일] 1990-01-01</code> → <code>오늘 운세 알려줘</code></li>
-            </ul>
+<head>
+    <meta charset="UTF-8">
+    <title>운세 AI 챗봇</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="wrap">
+        <div class="navbar">
+          <a href="#" class="navbar-brand">운세 AI 챗봇</a>
+            <div class="navbar-menu">
+                <a href="#" id="login-btn">로그인</a>
+                <a href="#" id="signup-btn">회원가입</a>
+                <a href="#" id="logout-btn" style="display:none">로그아웃</a>
+                <span id="user-info" style="display:none"></span>
           </div>
-        </details>
-      </div>
-    </header>
+        </div>
+        
+        <!-- 중앙 내용 -->
+        <div class="bodybox">
+            <!-- 왼쪽 사이드바 -->
+            <aside class="sidebar-left">
+                <!-- 생년월일 표시 (읽기 전용) -->
+                <div class="birthdate-section" id="birthdate-section" style="margin-bottom: 14px; display: none;">
+                    <div id="birthdate-display" style="padding: 12px; border-radius: 10px; 
+                         background: rgba(255, 255, 255, 0.05); font-size: 14px; 
+                         text-align: center;"></div>
+                </div>
+                
+                <button class="zodiac-select-btn">
+                    <span class="selected-zodiac">물병자리</span>
+                    선택
+                </button>
+                
+                <!-- 별자리 리스트 -->
+                <ul class="zodiac-list">
+                    <li data-zodiac="aries">
+                        <strong>양자리</strong>
+                        <span>3.21 ~ 4.19</span>
+                    </li>
+                    <li data-zodiac="taurus">
+                        <strong>황소자리</strong>
+                        <span>4.20 ~ 5.20</span>
+                    </li>
+                    <li data-zodiac="gemini">
+                        <strong>쌍둥이자리</strong>
+                        <span>5.21 ~ 6.21</span>
+                    </li>
+                    <li data-zodiac="cancer">
+                        <strong>게자리</strong>
+                        <span>6.22 ~ 7.22</span>
+                    </li>
+                    <li data-zodiac="leo">
+                        <strong>사자자리</strong>
+                        <span>7.23 ~ 8.22</span>
+                    </li>
+                    <li data-zodiac="virgo">
+                        <strong>처녀자리</strong>
+                        <span>8.23 ~ 9.22</span>
+                    </li>
+                    <li data-zodiac="libra">
+                        <strong>천칭자리</strong>
+                        <span>9.23 ~ 10.22</span>
+                    </li>
+                    <li data-zodiac="scorpio">
+                        <strong>전갈자리</strong>
+                        <span>10.23 ~ 11.22</span>
+                    </li>
+                    <li data-zodiac="sagittarius">
+                        <strong>사수자리</strong>
+                        <span>11.23 ~ 12.21</span>
+                    </li>
+                    <li data-zodiac="capricorn">
+                        <strong>염소자리</strong>
+                        <span>12.22 ~ 1.19</span>
+                    </li>
+                    <li data-zodiac="aquarius">
+                        <strong>물병자리</strong>
+                        <span>1.20 ~ 2.18</span>
+                    </li>
+                    <li data-zodiac="pisces">
+                        <strong>물고기자리</strong>
+                        <span>2.19 ~ 3.20</span>
+                    </li>
+                </ul>
+                
+                <!-- 선택된 별자리 설명 -->
+                <div class="zodiac-desc">
+                    <p>
+                        자유로운 사고와 독창성을 가진 별자리로,<br>
+                        새로운 시도를 두려워하지 않는 성향을 가지고 있어요.
+                    </p>
+                </div>
+            </aside>
 
-    <!-- Auth Modal -->
-    <div id="auth-modal" class="modal" style="display:none;">
-      <div class="modal-content">
-        <h2 id="auth-title">로그인</h2>
-        <form id="auth-form">
-          <input type="text" id="auth-userid" placeholder="아이디" required>
-          <input type="text" id="auth-username" placeholder="이름" style="display:none;" required>
-          <input type="password" id="auth-password" placeholder="비밀번호" required>
-          <label>
-            <input type="checkbox" id="toggle-password-check"> 비밀번호 표시
-          </label>
-          <input type="text" id="auth-birthdate" placeholder="생년월일 (YYYYMMDD, 선택)" style="display:none;">
-          <button type="submit" class="btn-primary">확인</button>
-          <button type="button" id="auth-cancel" class="btn-muted">취소</button>
-        </form>
-        <p id="auth-message"></p>
-      </div>
+            <!-- 중앙 AI 채팅 -->
+            <main class="chat-main" data-mode="chat">
+                <div class="chat-messages" id="chat-messages">
+                   <div class="message ai">
+                    <div class="bubble">
+                         안녕하세요! 오늘의 운세를 알려드릴게요 ✨
+                    </div>
+                   </div>
+                </div>
+                
+                <div id="typing-indicator" style="display:none; padding: 10px; 
+                     font-size: 14px; opacity: 0.7; text-align: center;">
+                    AI가 답변을 작성 중입니다...
+                </div>
+            
+                <div class="chat-input">
+                    <input type="text" id="user-input" placeholder="운세에 대해 물어보세요..." disabled>
+                    <button id="send-button" disabled>전송</button>
+                </div>
+            </main>
+        
+            <!-- 오른쪽 사이드바 -->
+            <aside class="sidebar-right">
+                <div class="today-date" id="today-date">
+                    <p>2026.01.31</p>
+                    <span>Friday</span>
+                </div>
+            
+                <ul class="chat-history" id="chat-history">
+                    <li>오늘의 운세</li>
+                    <li>연애운 질문</li>
+                    <li>금전운 상담</li>
+                    <li>이번 주 운세</li>
+                </ul>
+            </aside>
+        </div>
     </div>
 
-    <div class="chat-container">
-      <div id="chat-messages" class="chat-messages">
-        <div class="message assistant-message">
-          <p>
-            안녕하세요! 저는 생년월일을 기반으로 운세를 알려드리는 한국어 전용 도우미입니다. 생년월일을 입력하거나 UI에서 설정하시면 띠 기반의 오늘의 운세 및 간단한 추천 행동을 한국어로 안내해 드립니다.
-          </p>
+    <!-- 인증 모달 -->
+    <div id="auth-modal" style="display: none; position: fixed; top: 0; left: 0; 
+         width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; 
+         align-items: center; justify-content: center;">
+        <div style="background: #161838; border: 1px solid #C7D7F9; border-radius: 16px; 
+             padding: 30px; width: 400px; max-width: 90%;">
+            <h2 id="auth-title" style="margin-bottom: 20px; text-align: center;">로그인</h2>
+            <form id="auth-form">
+                <input type="text" id="auth-userid" placeholder="아이디 (영문/숫자 4-8자)" 
+                       required style="width: 100%; padding: 12px; margin-bottom: 12px; 
+                       border-radius: 10px; border: none; background: #1F2352;">
+                <input type="text" id="auth-username" placeholder="이름 (2-4자)" 
+                       style="width: 100%; padding: 12px; margin-bottom: 12px; 
+                       border-radius: 10px; border: none; background: #1F2352; display: none;">
+                <input type="password" id="auth-password" placeholder="비밀번호 (8-20자)" 
+                       required style="width: 100%; padding: 12px; margin-bottom: 12px; 
+                       border-radius: 10px; border: none; background: #1F2352;">
+                <input type="text" id="auth-birthdate" placeholder="생년월일 8자리 (선택)" 
+                       maxlength="8" inputmode="numeric" 
+                       style="width: 100%; padding: 12px; margin-bottom: 12px; 
+                       border-radius: 10px; border: none; background: #1F2352; display: none;">
+                <div style="display: flex; gap: 10px; margin-top: 16px;">
+                    <button type="submit" style="flex: 1; padding: 12px; border-radius: 10px; 
+                            border: none; background: #9DB2F5; color: #161838; cursor: pointer; 
+                            font-weight: 500;">확인</button>
+                    <button type="button" id="auth-cancel" style="flex: 1; padding: 12px; 
+                            border-radius: 10px; border: none; background: #2B2F6F; 
+                            cursor: pointer;">취소</button>
+                </div>
+                <div id="auth-message" style="margin-top: 12px; font-size: 13px; 
+                     text-align: center;"></div>
+            </form>
         </div>
-      </div>
-
-      <div class="typing-indicator" id="typing-indicator">
-        AI is thinking...
-      </div>
-
-      <!-- Compact controls bar (desktop & mobile) -->
-      <div class="controls-bar">
-        <div class="controls-left">
-            <label for="birthdate-input">생년월일</label>
-            <button id="birthdate-dec" aria-label="하루 감소" title="하루 감소">−</button>
-            <input id="birthdate-input" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="YYYYMMDD" maxlength="8" />
-            <button id="birthdate-inc" aria-label="하루 증가" title="하루 증가">＋</button>
-          </div>
-        <div class="controls-middle">
-          <label for="target-date-input">운세 날짜</label>
-          <button id="target-date-dec" aria-label="하루 감소" title="하루 감소">−</button>
-          <input id="target-date-input" type="date" />
-          <button id="target-date-inc" aria-label="하루 증가" title="하루 증가">＋</button>
-          <button id="target-date-today" class="btn-small" title="오늘로 설정" style="margin-left:4px; padding:2px 6px; font-size:0.8rem;">오늘</button>
-        </div>
-        <div class="controls-right">
-          <button id="set-birthdate-button" class="btn-primary">설정</button>
-          <button id="clear-birthdate-button" class="btn-muted">지우기</button>
-        </div>
-      </div>
-
-      <div class="message-input" role="region" aria-label="채팅 입력 영역">
-        <div class="input-container">
-          <div class="input-row">
-            <label for="birthdate-input">생년월일:</label>
-            <label for="target-date-input" class="target-date-label">운세 날짜:</label>
-            <div id="target-date-display">(운세 날짜: 오늘)</div>
-            <div id="birthdate-display"></div>
-          </div>
-
-          <div class="textarea-row">
-            <div id="zodiac-display" class="zodiac-info" style="display:none;">
-              <span id="zodiac-sign"></span>
-              <span id="zodiac-dates" class="zodiac-dates-small"></span>
-            </div>
-            <textarea
-              id="user-input"
-              placeholder="메시지를 입력하세요... (한국어로 입력해주세요)"
-              rows="1"
-              autofocus
-            ></textarea>
-            <button id="send-button">전송</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <footer>
-      <p>Cloudflare Workers AI Chat Template &copy; 2025</p>
-    </footer>
-
-    <!-- Mobile-only toolbar -->
-    <div id="mobile-toolbar" class="mobile-toolbar" aria-hidden="true">
-      <button id="toolbar-dob" class="mobile-toolbar-btn" aria-label="생년월일 설정">생년월일</button>
-      <button id="toolbar-focus" class="mobile-toolbar-btn" aria-label="메시지 입력으로 포커스">입력</button>
     </div>
 
     <script src="js/app.js"></script>
-  </body>
+</body>
 </html>
