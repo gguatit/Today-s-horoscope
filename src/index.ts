@@ -353,7 +353,8 @@ async function handleSaveResponse(
     });
   }
 
-  const userId = payload.sub;
+  // 사용자 ID 가져오기 (user_id TEXT 사용)
+  const userId = payload.userId; // users.user_id (TEXT)
 
   try {
     const { aiResponse } = await request.json() as { aiResponse: string };
@@ -366,8 +367,9 @@ async function handleSaveResponse(
     }
 
     // 가장 최근의 null ai_response 레코드 업데이트
+    // user_id는 chat_history의 INTEGER 컬럼이므로 서브쿼리로 변환
     await env.DB.prepare(
-      "UPDATE chat_history SET ai_response = ? WHERE user_id = ? AND ai_response IS NULL ORDER BY created_at DESC LIMIT 1"
+      "UPDATE chat_history SET ai_response = ? WHERE user_id = (SELECT id FROM users WHERE user_id = ?) AND ai_response IS NULL ORDER BY created_at DESC LIMIT 1"
     ).bind(aiResponse, userId).run();
 
     return new Response(JSON.stringify({ success: true }), {
@@ -408,21 +410,8 @@ async function handleChatRequest(
     });
   }
 
-  // 사용자 ID 가져오기
-  const userId = payload.sub;
-
-  // ===== 일일 운세 횟수 제한 체크 (4회) =====
-  const limitCheck = await validateAndIncrement(userId, env);
-  
-  if (!limitCheck.success) {
-    return new Response(JSON.stringify({ 
-      error: limitCheck.message,
-      remaining: 0
-    }), { 
-      status: 429, // Too Many Requests
-      headers: { "Content-Type": "application/json" }
-    });
-  }
+  // 사용자 ID 가져오기 (user_id TEXT 사용)
+  const userId = payload.userId; // users.user_id (TEXT)
 
   try {
     // JSON 요청 본문 파싱
@@ -431,21 +420,41 @@ async function handleChatRequest(
     };
 
     // 시스템 프롬프트 강제 적용 및 기존 system 메시지 제거
-    // 이를 통해 AI가 한국어 전용 + 검증 규칙을 항상 따르도록 보장
     const nonSystem = messages.filter((msg) => msg.role !== "system");
     
+    // 사용자의 실제 질문 추출 (시스템 태그 제외)
+    const userMessages = nonSystem.filter(m => 
+      m.role === "user" && 
+      m.content &&
+      !m.content.startsWith("[생년월일]") &&
+      !m.content.startsWith("[운세날짜]") &&
+      !m.content.startsWith("[운세|")
+    );
+    const userLastMessage = userMessages.slice(-1)[0]?.content || "";
+
+    // ===== 일일 운세 횟수 제한 + 중복 질문 체크 =====
+    if (userLastMessage) {
+      const limitCheck = await validateAndIncrement(userId, userLastMessage, env);
+      
+      if (!limitCheck.success) {
+        return new Response(JSON.stringify({ 
+          error: limitCheck.message,
+          remaining: limitCheck.remaining
+        }), { 
+          status: 429, // Too Many Requests
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+    }
+    
     // 채팅 기록에서 생년월일 추출 후 별자리 계산
-    // 별자리 정보를 시스템 프롬프트에 추가하여 AI가 운세 생성에 활용
     let zodiacInfo = "";
     const birthdateMsg = nonSystem.find((m) => m.content && m.content.startsWith("[생년월일]"));
     if (birthdateMsg) {
-      // "[생년월일] 1990-03-21" 형태에서 날짜 추출
       const birthdate = birthdateMsg.content.replace("[생년월일]", "").trim();
       const zodiac = calculateZodiacSign(birthdate);
       
       if (zodiac) {
-        // AI에게 전달할 별자리 정보 포맷
-        // 예: "[별자리 정보] 사용자의 별자리: 양자리 (Aries, 03/21 - 04/19). 특성: 에너지와 추진력..."
         zodiacInfo = `\n\n[별자리 정보] 사용자의 별자리: ${zodiac.name} (${zodiac.nameEn}, ${zodiac.start.substring(0,2)}/${zodiac.start.substring(2)} - ${zodiac.end.substring(0,2)}/${zodiac.end.substring(2)}). 특성: ${zodiac.traits}`;
       }
     }
@@ -456,30 +465,20 @@ async function handleChatRequest(
       ...nonSystem,
     ];
 
-    // 사용자의 실제 질문 추출 (시스템 태그 제외)
-    // [생년월일], [운세날짜], [운세|type:...] 같은 태그는 제외
-    const userMessages = nonSystem.filter(m => 
-      m.role === "user" && 
-      m.content &&
-      !m.content.startsWith("[생년월일]") &&
-      !m.content.startsWith("[운세날짜]") &&
-      !m.content.startsWith("[운세|")
-    );
-    const userLastMessage = userMessages.slice(-1)[0]?.content || "";
-
     // total_requests 증가 및 질문 기록 저장 (비동기 처리)
     ctx.waitUntil(
       (async () => {
         try {
-          // 요청 횟수 증가
-          await env.DB.prepare("UPDATE users SET total_requests = total_requests + 1 WHERE id = ?")
+          // 요청 횟수 증가 (user_id는 TEXT이므로 user_id 컬럼 사용)
+          await env.DB.prepare("UPDATE users SET total_requests = total_requests + 1 WHERE user_id = ?")
             .bind(userId)
             .run();
           
           // 사용자 질문 기록 (AI 응답은 일단 null로 저장)
+          // user_id는 users 테이블의 INTEGER id를 참조하므로 서브쿼리 사용
           if (userLastMessage) {
             await env.DB.prepare(
-              "INSERT INTO chat_history (user_id, user_message, ai_response) VALUES (?, ?, ?)"
+              "INSERT INTO chat_history (user_id, user_message, ai_response) VALUES ((SELECT id FROM users WHERE user_id = ?), ?, ?)"
             ).bind(userId, userLastMessage, null).run();
           }
         } catch (e) {

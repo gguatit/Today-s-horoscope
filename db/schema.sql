@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS daily_fortune_limits (
   date TEXT NOT NULL,               -- 날짜 (YYYY-MM-DD 형식)
   count INTEGER DEFAULT 0,          -- 해당 날짜의 조회 횟수
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(user_id, date)             -- 사용자당 날짜별로 하나의 레코드만 존재
+  UNIQUE(user_id, date),            -- 사용자당 날짜별로 하나의 레코드만 존재
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 -- 일일 제한 테이블 인덱스

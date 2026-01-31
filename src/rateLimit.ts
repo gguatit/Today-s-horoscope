@@ -1,6 +1,7 @@
 /**
  * 일일 운세 횟수 제한 모듈
  * 각 사용자가 하루에 최대 4회까지만 운세를 조회할 수 있도록 제한
+ * 같은 질문은 하루에 한 번만 가능
  */
 
 import { Env } from "./types";
@@ -17,8 +18,70 @@ function getTodayString(): string {
 }
 
 /**
+ * 두 질문이 유사한지 비교 (정규화 후 비교)
+ * @param question1 - 첫 번째 질문
+ * @param question2 - 두 번째 질문
+ * @returns 유사하면 true
+ */
+function isSimilarQuestion(question1: string, question2: string): boolean {
+  // 공백, 특수문자 제거 후 소문자로 변환하여 비교
+  const normalize = (str: string) => 
+    str.replace(/[\s\.,!?~]/g, '').toLowerCase().trim();
+  
+  const norm1 = normalize(question1);
+  const norm2 = normalize(question2);
+  
+  // 완전히 동일하거나 한쪽이 다른 쪽을 포함하는 경우
+  if (norm1 === norm2) return true;
+  if (norm1.length > 5 && norm2.length > 5) {
+    if (norm1.includes(norm2) || norm2.includes(norm1)) return true;
+  }
+  
+  return false;
+}
+
+/**
+ * 사용자가 오늘 같은 질문을 했는지 체크
+ * @param userId - 사용자 ID (TEXT)
+ * @param question - 체크할 질문
+ * @param env - Cloudflare 환경 변수
+ * @returns 중복 질문이면 true
+ */
+export async function checkDuplicateQuestion(
+  userId: string,
+  question: string,
+  env: Env
+): Promise<boolean> {
+  const today = getTodayString();
+  
+  // 오늘 사용자의 모든 질문 가져오기
+  const result = await env.DB.prepare(`
+    SELECT user_message FROM chat_history 
+    WHERE user_id = (SELECT id FROM users WHERE user_id = ?)
+    AND DATE(created_at) = ?
+    ORDER BY created_at DESC
+  `)
+    .bind(userId, today)
+    .all();
+  
+  if (!result.results || result.results.length === 0) {
+    return false;
+  }
+  
+  // 각 질문과 비교
+  for (const row of result.results) {
+    const prevQuestion = row.user_message as string;
+    if (prevQuestion && isSimilarQuestion(question, prevQuestion)) {
+      return true; // 중복 질문 발견
+    }
+  }
+  
+  return false;
+}
+
+/**
  * 사용자의 오늘 운세 조회 횟수 확인
- * @param userId - 사용자 ID
+ * @param userId - 사용자 ID (TEXT)
  * @param env - Cloudflare 환경 변수
  * @returns 오늘 조회한 횟수
  */
@@ -37,7 +100,7 @@ export async function getDailyRequestCount(userId: string, env: Env): Promise<nu
 
 /**
  * 사용자가 오늘 운세를 조회할 수 있는지 확인
- * @param userId - 사용자 ID
+ * @param userId - 사용자 ID (TEXT)
  * @param env - Cloudflare 환경 변수
  * @returns { allowed: boolean, remaining: number, message: string }
  */
@@ -65,7 +128,7 @@ export async function checkDailyLimit(
 
 /**
  * 사용자의 오늘 운세 조회 횟수 증가
- * @param userId - 사용자 ID
+ * @param userId - 사용자 ID (TEXT)
  * @param env - Cloudflare 환경 변수
  */
 export async function incrementDailyCount(userId: string, env: Env): Promise<void> {
@@ -84,15 +147,30 @@ export async function incrementDailyCount(userId: string, env: Env): Promise<voi
 }
 
 /**
- * 운세 조회 가능 여부 확인 및 횟수 증가를 한 번에 처리
- * @param userId - 사용자 ID
+ * 운세 조회 가능 여부 확인 (중복 질문 + 횟수 제한)
+ * @param userId - 사용자 ID (TEXT)
+ * @param question - 사용자 질문
  * @param env - Cloudflare 환경 변수
  * @returns 조회 가능 여부와 메시지
  */
 export async function validateAndIncrement(
   userId: string,
+  question: string,
   env: Env
 ): Promise<{ success: boolean; remaining: number; message: string }> {
+  // 1. 중복 질문 체크
+  const isDuplicate = await checkDuplicateQuestion(userId, question, env);
+  if (isDuplicate) {
+    const count = await getDailyRequestCount(userId, env);
+    const remaining = Math.max(0, MAX_DAILY_REQUESTS - count);
+    return {
+      success: false,
+      remaining,
+      message: '같은 질문은 하루에 한 번만 가능합니다. 다른 질문을 해주세요! 🔄'
+    };
+  }
+  
+  // 2. 일일 횟수 제한 체크
   const check = await checkDailyLimit(userId, env);
   
   if (!check.allowed) {
@@ -103,7 +181,7 @@ export async function validateAndIncrement(
     };
   }
   
-  // 횟수 증가
+  // 3. 횟수 증가
   await incrementDailyCount(userId, env);
   
   return {
