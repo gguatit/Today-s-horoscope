@@ -44,6 +44,60 @@ const zodiacDescriptions = {
 
 // ========== 유틸리티 함수 ==========
 
+// JWT 토큰 디코딩 및 만료 체크
+function isTokenExpired(token) {
+  if (!token) return true;
+  
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    
+    // exp 클레임이 있는 경우 만료 시간 체크
+    if (payload.exp) {
+      const currentTime = Math.floor(Date.now() / 1000);
+      return currentTime > payload.exp;
+    }
+    
+    return false;
+  } catch (e) {
+    console.error('Token decode error:', e);
+    return true;
+  }
+}
+
+// 로그아웃 처리
+function performLogout(message = '로그아웃되었습니다.') {
+  authToken = null;
+  authUser = null;
+  authUserName = null;
+  userBirthdate = null;
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('authUser');
+  localStorage.removeItem('authUserName');
+  localStorage.removeItem('userBirthdate');
+  localStorage.removeItem('chatHistory');
+  
+  const birthdateDisplay = document.getElementById('birthdate-display');
+  const birthdateSection = document.getElementById('birthdate-section');
+  const zodiacInfo = document.getElementById('zodiac-info');
+  const zodiacDescEl = document.getElementById('zodiac-desc');
+  const chatMessages = document.getElementById('chat-messages');
+  
+  if (birthdateDisplay) birthdateDisplay.textContent = '';
+  if (birthdateSection) birthdateSection.style.display = 'none';
+  if (zodiacInfo) zodiacInfo.style.display = 'none';
+  if (zodiacDescEl) zodiacDescEl.style.display = 'none';
+  chatHistory = [];
+  if (chatMessages) chatMessages.innerHTML = '';
+  
+  addMessageToChat('ai', message);
+  updateAuthUI();
+}
+
+// ========== 유틸리티 함수 ==========
+
 // YYYYMMDD -> YYYY-MM-DD
 function formatBirthdate(val) {
   if (!val || val.length !== 8) return null;
@@ -338,6 +392,12 @@ async function sendMessage() {
     addMessageToChat('ai', '로그인이 필요합니다.');
     return;
   }
+  
+  // 토큰 만료 체크
+  if (isTokenExpired(authToken)) {
+    performLogout('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
+    return;
+  }
 
   if (message === '' || isProcessing) return;
 
@@ -379,12 +439,7 @@ async function sendMessage() {
 
     if (!response.ok) {
       if (response.status === 401) {
-        authToken = null;
-        authUser = null;
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('authUser');
-        updateAuthUI();
-        addMessageToChat('ai', '세션이 만료되었습니다. 다시 로그인해주세요.');
+        performLogout('세션이 만료되었습니다. 다시 로그인해주세요.');
         typingIndicator.style.display = 'none';
         isProcessing = false;
         return;
@@ -519,31 +574,7 @@ function initEventListeners() {
   // 로그아웃 버튼
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      authToken = null;
-      authUser = null;
-      authUserName = null;
-      userBirthdate = null;
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('authUser');
-      localStorage.removeItem('authUserName');
-      localStorage.removeItem('userBirthdate');
-      localStorage.removeItem('chatHistory');
-      
-      const birthdateDisplay = document.getElementById('birthdate-display');
-      const birthdateSection = document.getElementById('birthdate-section');
-      const zodiacInfo = document.getElementById('zodiac-info');
-      const zodiacDescEl = document.getElementById('zodiac-desc');
-      const chatMessages = document.getElementById('chat-messages');
-      
-      if (birthdateDisplay) birthdateDisplay.textContent = '';
-      if (birthdateSection) birthdateSection.style.display = 'none';
-      if (zodiacInfo) zodiacInfo.style.display = 'none';
-      if (zodiacDescEl) zodiacDescEl.style.display = 'none';
-      chatHistory = [];
-      if (chatMessages) chatMessages.innerHTML = '';
-      
-      addMessageToChat('ai', '로그아웃되었습니다.');
-      updateAuthUI();
+      performLogout('로그아웃되었습니다.');
     });
   }
 
@@ -582,6 +613,11 @@ function initEventListeners() {
 
 // ========== 초기화 ==========
 document.addEventListener('DOMContentLoaded', () => {
+  // 토큰 만료 체크
+  if (authToken && isTokenExpired(authToken)) {
+    performLogout('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
+  }
+  
   // 이벤트 리스너 등록
   initEventListeners();
   

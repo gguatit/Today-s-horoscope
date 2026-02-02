@@ -235,8 +235,17 @@ function sanitize(str: string): string {
 
 async function signJWT(payload: any): Promise<string> {
   const header = { alg: "HS256", typ: "JWT" };
+  
+  // 12시간 후 만료 (현재 시간 + 12시간을 초 단위로)
+  const expirationTime = Math.floor(Date.now() / 1000) + (12 * 60 * 60);
+  const payloadWithExp = {
+    ...payload,
+    exp: expirationTime,
+    iat: Math.floor(Date.now() / 1000) // 발급 시간
+  };
+  
   const encodedHeader = base64UrlEncode(JSON.stringify(header));
-  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  const encodedPayload = base64UrlEncode(JSON.stringify(payloadWithExp));
   
   const data = `${encodedHeader}.${encodedPayload}`;
   const signature = await hmacSha256(data, JWT_SECRET);
@@ -279,7 +288,18 @@ async function verifyJWT(token: string): Promise<any | null> {
     
     // Decode payload
     const payloadJson = atob(encodedPayload.replace(/-/g, "+").replace(/_/g, "/"));
-    return JSON.parse(payloadJson);
+    const payload = JSON.parse(payloadJson);
+    
+    // 만료 시간 검증
+    if (payload.exp) {
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (currentTime > payload.exp) {
+        // 토큰이 만료됨
+        return null;
+      }
+    }
+    
+    return payload;
   } catch (e) {
     return null;
   }
