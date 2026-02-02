@@ -25,16 +25,19 @@ a {
 }
 
 .wrap {
-    width: 1360px;
+    max-width: 1360px;
+    width: 100%;
     height: 100vh;
     margin: 0 auto;
+    padding: 0 10px;
 }
 
 /* 네비게이션 바 */
 .navbar {
-    width: 1350px;
+    max-width: 1350px;
+    width: 100%;
     color: #C7D7F9;
-    padding: 15px 10px 15px 30px;
+    padding: 15px 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -70,18 +73,20 @@ a {
 .bodybox {
     display: flex;
     width: 100%;
-    height: 90vh;
+    height: calc(100vh - 70px);
     gap: 8px;
 }
 
 /* 사이드바 공통 */
 .sidebar-left,
 .sidebar-right {
-    width: 280px;
+    flex: 0 0 280px;
+    max-width: 280px;
     height: 100%;
     border: 1px solid #C7D7F9;
     border-radius: 16px;
     padding: 20px;
+    overflow-y: auto;
 }
 
 /* 왼쪽 사이드바 - 별자리 선택 */
@@ -154,7 +159,8 @@ a {
 
 /* 중앙 채팅 영역 */
 .chat-main {
-    width: 800px;
+    flex: 1;
+    min-width: 0;
     height: 100%;
     border: 1px solid #C7D7F9;
     border-radius: 16px;
@@ -308,4 +314,250 @@ a {
 
 .chat-messages::-webkit-scrollbar-thumb:hover {
     background: rgba(199, 215, 249, 0.5);
+}
+
+/* 반응형 디자인 */
+
+/* 태블릿 (1024px 이하) */
+@media screen and (max-width: 1024px) {
+    .wrap {
+        padding: 0 8px;
+    }
+
+    .navbar {
+        padding: 12px 8px;
+    }
+
+    .navbar-brand {
+        font-size: 20px;
+    }
+
+    .navbar-menu a {
+        padding: 6px 12px;
+        font-size: 14px;
+    }
+
+    .bodybox {
+        gap: 6px;
+    }
+
+    .sidebar-left,
+    .sidebar-right {
+        flex: 0 0 220px;
+        max-width: 220px;
+        padding: 15px;
+    }
+
+    .chat-main {
+        padding: 20px;
+    }
+}
+
+/* 작은 태블릿/큰 모바일 (768px 이하) */
+@media screen and (max-width: 768px) {
+    .bodybox {
+        flex-direction: column;
+        height: auto;
+        min-height: calc(100vh - 60px);
+    }
+
+    .sidebar-left,
+    .sidebar-right {
+        flex: none;
+        max-width: 100%;
+        width: 100%;
+        height: auto;
+        min-height: 0;
+    }
+
+    .sidebar-left {
+        order: 1;
+    }
+
+    .chat-main {
+        order: 2;
+        flex: none;
+        min-height: 500px;
+        padding: 20px 15px;
+    }
+
+    .sidebar-right {
+        order: 3;
+    }
+
+    .navbar {
+        flex-wrap: wrap;
+        padding: 10px;
+    }
+
+    .navbar-brand {
+        font-size: 18px;
+    }
+
+    .navbar-menu {
+        gap: 8px;
+    }
+
+    .navbar-menu a {
+        padding: 5px 10px;
+        font-size: 13px;
+    }
+
+    #user-info {
+        font-size: 13px;
+    }
+
+    .zodiac-list {
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+    }
+
+    .chat-messages {
+        gap: 10px;
+    }
+
+    .bubble {
+        max-width: 85%;
+        padding: 12px 15px;
+        font-size: 15px;
+    }
+
+    .chat-input {
+        gap: 8px;
+    }
+
+    .chat-input input {
+        padding: 10px;
+        font-size: 15px;
+    }
+
+    .chat-input button {
+        padding: 0 16px;
+        font-size: 15px;
+    }
+}
+
+/* 모바일 (480px 이하) */
+@media screen and (max-width: 480px) {
+    .wrap {
+        padding: 0 5px;
+    }
+
+    .navbar {
+        padding: 8px 5px;
+    }
+
+    .navbar-brand {
+        font-size: 16px;
+    }
+
+    .navbar-menu {
+        gap: 5px;
+        flex-wrap: wrap;
+    }
+
+    .navbar-menu a {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+
+    #user-info {
+        font-size: 12px;
+        width: 100%;
+        text-align: center;
+        margin-top: 5px;
+    }
+
+    .bodybox {
+        gap: 5px;
+    }
+
+    .sidebar-left,
+    .sidebar-right {
+        padding: 12px;
+        border-radius: 12px;
+    }
+
+    .chat-main {
+        padding: 15px 10px;
+        border-radius: 12px;
+        min-height: 400px;
+    }
+
+    .zodiac-list {
+        grid-template-columns: 1fr;
+        gap: 5px;
+    }
+
+    .zodiac-list li {
+        padding: 8px;
+    }
+
+    .zodiac-list li strong {
+        font-size: 13px;
+    }
+
+    .zodiac-list li span {
+        font-size: 10px;
+    }
+
+    .zodiac-desc {
+        padding: 10px;
+        font-size: 13px;
+    }
+
+    .bubble {
+        max-width: 90%;
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    .chat-input {
+        gap: 5px;
+        padding-top: 10px;
+    }
+
+    .chat-input input {
+        padding: 8px;
+        font-size: 14px;
+    }
+
+    .chat-input button {
+        padding: 0 12px;
+        font-size: 14px;
+    }
+
+    .today-date p {
+        font-size: 16px;
+    }
+
+    .today-date span {
+        font-size: 13px;
+    }
+
+    .chat-history li {
+        padding: 10px;
+        font-size: 13px;
+    }
+
+    /* 인증 모달 반응형 */
+    #auth-modal > div {
+        width: 90% !important;
+        max-width: 350px !important;
+        padding: 20px !important;
+    }
+
+    #auth-modal h2 {
+        font-size: 18px !important;
+    }
+
+    #auth-modal input {
+        padding: 10px !important;
+        font-size: 14px !important;
+    }
+
+    #auth-modal button {
+        padding: 10px !important;
+        font-size: 14px !important;
+    }
 }
