@@ -262,6 +262,8 @@ a {
     color: #161838;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .chat-input button:hover {
