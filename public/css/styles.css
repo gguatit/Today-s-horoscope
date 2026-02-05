@@ -70,9 +70,12 @@ a {
 }
 
 .navbar-menu #user-info {
+    display: inline-block;
     padding: 8px 16px;
+    border-radius: 5px;
     font-weight: 500;
     color: #FAE8D3;
+    line-height: normal;
 }
 
 /* 본문 박스 */
