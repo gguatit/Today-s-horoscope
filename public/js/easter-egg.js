@@ -20,9 +20,9 @@
   const asciiArt = `
     ╔═══════════════════════════════════════╗
     ║                                       ║
-    ║        ✨ 운세 AI 챗봇 ✨            ║
+    ║        ✨ 운세 AI 챗봇 ✨             ║
     ║                                       ║
-    ║         오늘의 개발자 운세            ║
+    ║         오늘의 개발자 운세              ║
     ║                                       ║
     ╚═══════════════════════════════════════╝
   `;
@@ -84,6 +84,8 @@
     console.log('%c• showStats() - 현재 세션 통계 보기', styles.info);
     console.log('%c• clearAll() - 모든 데이터 초기화', styles.info);
     console.log('%c• showAsciiArt() - ASCII 아트 보기', styles.info);
+    console.log('%c• rainbowMode() - 🌈 무지개 모드 활성화', styles.info);
+    console.log('%c• bugHunter() - 🐛 버그 헌터 게임 시작', styles.info);
     console.log('');
   };
 
@@ -123,12 +125,20 @@
     const birthdate = localStorage.getItem('userBirthdate');
     const history = localStorage.getItem('chatHistory');
     const historyCount = history ? JSON.parse(history).length : 0;
+    const bugStats = JSON.parse(localStorage.getItem('bugHunterStats') || '{"found": 0, "attempts": 0}');
 
     console.log('%c📊 현재 세션 통계', 'color: #9DB2F5; font-size: 16px; font-weight: bold;');
     console.log('%c로그인 상태: ' + (token ? '✅ 로그인됨' : '❌ 로그아웃'), styles.info);
     if (user) console.log('%c사용자 이름: ' + user, styles.info);
     if (birthdate) console.log('%c생년월일: ' + birthdate, styles.info);
     console.log('%c대화 기록: ' + historyCount + '개', styles.info);
+    console.log('');
+    console.log('%c🐛 버그 헌터 통계', 'color: #9DB2F5; font-weight: bold;');
+    console.log(`%c버그 발견: ${bugStats.found}개 / 시도: ${bugStats.attempts}회`, styles.info);
+    if (bugStats.attempts > 0) {
+      const successRate = ((bugStats.found / bugStats.attempts) * 100).toFixed(1);
+      console.log(`%c성공률: ${successRate}%`, styles.info);
+    }
   };
 
   // 모든 데이터 초기화
@@ -168,6 +178,113 @@
     
     const randomArt = arts[Math.floor(Math.random() * arts.length)];
     console.log('%c' + randomArt, 'color: #9DB2F5; font-size: 14px;');
+  };
+
+  // 무지개 모드 🌈
+  let rainbowActive = false;
+  window.rainbowMode = function() {
+    rainbowActive = !rainbowActive;
+    
+    if (rainbowActive) {
+      console.log('%c🌈 무지개 모드 활성화! 콘솔이 화려해집니다!', 'color: #FF6B6B; font-size: 16px; font-weight: bold;');
+      
+      const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
+      const messages = [
+        '✨ 반짝반짝 빛나는 코드',
+        '🎨 아름다운 알고리즘',
+        '🌟 완벽한 리팩토링',
+        '💎 보석같은 로직',
+        '🎪 신나는 디버깅',
+        '🎭 우아한 디자인 패턴',
+        '🎨 컬러풀한 콘솔',
+        '🌈 무지개 운세'
+      ];
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        if (!rainbowActive || count >= 20) {
+          clearInterval(interval);
+          if (rainbowActive) {
+            console.log('%c🌈 무지개 모드가 종료되었습니다!', 'color: #9DB2F5; font-weight: bold;');
+            rainbowActive = false;
+          }
+          return;
+        }
+        
+        const color = colors[count % colors.length];
+        const message = messages[Math.floor(Math.random() * messages.length)];
+        console.log('%c' + message, `color: ${color}; font-size: 14px; font-weight: bold;`);
+        count++;
+      }, 200);
+      
+      console.log('%crainbowMode()를 다시 입력하면 중지됩니다', 'color: #B3C5F9; font-size: 11px;');
+    } else {
+      console.log('%c🌈 무지개 모드가 비활성화되었습니다', 'color: #9DB2F5; font-weight: bold;');
+    }
+  };
+
+  // 버그 헌터 게임 🐛
+  window.bugHunter = function() {
+    console.clear();
+    console.log('%c🐛 버그 헌터 게임에 오신 것을 환영합니다!', 'color: #FAE8D3; font-size: 20px; font-weight: bold;');
+    console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color: #C7D7F9;');
+    console.log('');
+    console.log('%c🎯 목표: 코드에서 숨어있는 버그를 찾으세요!', 'color: #9DB2F5; font-weight: bold;');
+    console.log('%c💡 힌트: findBug(번호)를 입력하여 버그를 찾으세요 (1-5)', 'color: #B3C5F9;');
+    console.log('');
+    
+    const bugs = [
+      { code: 'if (user = null)', issue: '비교 연산자 == 대신 할당 연산자 = 사용', line: '🐛' },
+      { code: 'array.legnth', issue: 'length 철자 오류 (legnth)', line: '🐛' },
+      { code: 'for(let i=0; i<10; i--)', issue: '무한 루프 (i++ 대신 i--)', line: '🐛' },
+      { code: 'JSON.parse(undefined)', issue: 'undefined를 parse할 수 없음', line: '🐛' },
+      { code: 'const result = await promise;', issue: 'async 함수 내부가 아닌데 await 사용', line: '🐛' }
+    ];
+    
+    const bugIndex = Math.floor(Math.random() * bugs.length);
+    const selectedBug = bugs[bugIndex];
+    
+    console.log('%c📝 의심스러운 코드들:', 'color: #9DB2F5; font-weight: bold; font-size: 14px;');
+    bugs.forEach((bug, index) => {
+      console.log(`%c${index + 1}. ${bug.code}`, 'color: #C7D7F9; font-family: monospace; font-size: 13px;');
+    });
+    console.log('');
+    
+    window.findBug = function(num) {
+      if (num < 1 || num > 5) {
+        console.log('%c❌ 1-5 사이의 숫자를 입력하세요!', 'color: #FF6B6B; font-weight: bold;');
+        return;
+      }
+      
+      if (num - 1 === bugIndex) {
+        console.log('%c🎉 정답입니다! 버그를 찾았습니다!', 'color: #4ECDC4; font-size: 16px; font-weight: bold;');
+        console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color: #C7D7F9;');
+        console.log('%c🐛 발견한 버그:', 'color: #9DB2F5; font-weight: bold;');
+        console.log(`%c코드: ${selectedBug.code}`, 'color: #C7D7F9; font-family: monospace;');
+        console.log(`%c문제: ${selectedBug.issue}`, 'color: #FAE8D3;');
+        console.log('');
+        console.log('%c🏆 당신은 진정한 버그 헌터입니다!', 'color: #F7DC6F; font-weight: bold;');
+        console.log('%cbugHunter()를 다시 실행하면 새로운 게임을 시작할 수 있습니다', 'color: #B3C5F9; font-size: 11px;');
+        
+        // 통계 저장
+        const stats = JSON.parse(localStorage.getItem('bugHunterStats') || '{"found": 0, "attempts": 0}');
+        stats.found++;
+        stats.attempts++;
+        localStorage.setItem('bugHunterStats', JSON.stringify(stats));
+        
+      } else {
+        console.log('%c❌ 틀렸습니다! 다시 시도해보세요', 'color: #FF6B6B; font-weight: bold;');
+        console.log('%c💡 힌트: 문법 오류나 논리 오류를 찾아보세요', 'color: #B3C5F9;');
+        
+        // 통계 업데이트
+        const stats = JSON.parse(localStorage.getItem('bugHunterStats') || '{"found": 0, "attempts": 0}');
+        stats.attempts++;
+        localStorage.setItem('bugHunterStats', JSON.stringify(stats));
+      }
+    };
+    
+    console.log('%c예시: findBug(3) - 3번 코드를 선택', 'color: #6E7DD8; font-size: 11px; font-style: italic;');
+    console.log('');
   };
 
   // 환영 메시지
