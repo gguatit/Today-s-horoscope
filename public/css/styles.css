@@ -470,11 +470,9 @@ a {
         font-size: 12px;
     }
 
-    #user-info {
+    .navbar-menu #user-info {
         font-size: 12px;
-        width: 100%;
-        text-align: center;
-        margin-top: 5px;
+        padding: 4px 8px;
     }
 
     .bodybox {
