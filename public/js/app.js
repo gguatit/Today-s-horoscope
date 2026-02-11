@@ -228,6 +228,7 @@ function loadHistory() {
 
 // 오늘 날짜 업데이트
 function updateTodayDate() {
+  const todayDateEl = document.getElementById('today-date');
   if (!todayDateEl) return;
   const now = new Date();
   const year = now.getFullYear();
