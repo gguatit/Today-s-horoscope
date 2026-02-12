@@ -148,6 +148,26 @@ graph TB
 }
 ```
 
+**JWT Secret Configuration**
+- 개발 환경: `wrangler.jsonc`의 `vars.JWT_SECRET` 사용
+- 프로덕션 환경: Wrangler Secrets로 안전하게 관리
+
+```bash
+# 프로덕션 환경에 JWT_SECRET 설정
+npx wrangler secret put JWT_SECRET
+# 프롬프트에서 강력한 시크릿 키 입력 (최소 64자 권장)
+
+# 로컬 개발 시에는 wrangler.jsonc의 vars 섹션 사용
+# {
+#   "vars": {
+#     "JWT_SECRET": "니들이 쓰고싶은거 쓰셈"
+#   }
+# }
+# ⚠️ 개발 환경에서도 충분히 복잡한 128자 이상의 랜덤 키 사용 권장
+```
+
+⚠️ **보안 권장사항**: 프로덕션 환경에서는 반드시 `wrangler secret put` 명령어로 강력한 시크릿을 설정하세요.
+
 ### Password Security
 
 **PBKDF2 Key Derivation**

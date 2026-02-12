@@ -167,7 +167,7 @@ async function handleAuthRequest(request: Request, env: Env): Promise<Response> 
           userId: user.user_id, 
           userName: user.user_name, 
           birthdate: user.birthdate 
-        });
+        }, env);
 
         return new Response(JSON.stringify({ 
           token, 
@@ -216,9 +216,6 @@ async function hashPassword(password: string, salt: string): Promise<string> {
   return btoa(String.fromCharCode(...new Uint8Array(exported)));
 }
 
-// 프로덕션 환경에서는 더 강력한 시크릿 키를 사용하세요 (환경 변수 권장)
-const JWT_SECRET = "secret-key-change-this-in-production"; 
-
 // XSS 방지를 위한 입력 문자열 정제 헬퍼 함수
 function sanitize(str: string): string {
   return str.replace(/[&<>"']/g, (match) => {
@@ -233,7 +230,7 @@ function sanitize(str: string): string {
   });
 }
 
-async function signJWT(payload: any): Promise<string> {
+async function signJWT(payload: any, env: Env): Promise<string> {
   const header = { alg: "HS256", typ: "JWT" };
   
   // 12시간 후 만료 (현재 시간 + 12시간을 초 단위로)
@@ -248,7 +245,7 @@ async function signJWT(payload: any): Promise<string> {
   const encodedPayload = base64UrlEncode(JSON.stringify(payloadWithExp));
   
   const data = `${encodedHeader}.${encodedPayload}`;
-  const signature = await hmacSha256(data, JWT_SECRET);
+  const signature = await hmacSha256(data, env.JWT_SECRET);
   
   return `${data}.${signature}`;
 }
@@ -275,14 +272,14 @@ async function hmacSha256(data: string, secret: string): Promise<string> {
   return btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
 
-async function verifyJWT(token: string): Promise<any | null> {
+async function verifyJWT(token: string, env: Env): Promise<any | null> {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
     
     const [encodedHeader, encodedPayload, providedSignature] = parts;
     const data = `${encodedHeader}.${encodedPayload}`;
-    const expectedSignature = await hmacSha256(data, JWT_SECRET);
+    const expectedSignature = await hmacSha256(data, env.JWT_SECRET);
     
     if (providedSignature !== expectedSignature) return null;
     
@@ -365,7 +362,7 @@ async function handleSaveResponse(
   }
 
   const token = authHeader.substring(7);
-  const payload = await verifyJWT(token);
+  const payload = await verifyJWT(token, env);
   if (!payload) {
     return new Response(JSON.stringify({ error: "유효하지 않은 인증 토큰입니다." }), { 
       status: 401,
@@ -422,7 +419,7 @@ async function handleChatRequest(
   }
 
   const token = authHeader.substring(7); // Remove "Bearer " prefix
-  const payload = await verifyJWT(token);
+  const payload = await verifyJWT(token, env);
   if (!payload) {
     return new Response(JSON.stringify({ error: "유효하지 않은 인증 토큰입니다." }), { 
       status: 401,

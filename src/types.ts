@@ -17,6 +17,12 @@ export interface Env {
    * Binding for static assets.
    */
   ASSETS: { fetch: (request: Request) => Promise<Response> };
+
+  /**
+   * JWT secret key for authentication.
+   * Should be set via wrangler secret in production: npx wrangler secret put JWT_SECRET
+   */
+  JWT_SECRET: string;
 }
 
 /**
