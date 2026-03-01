@@ -1,10 +1,13 @@
 # 일일 운세 횟수 제한 기능 적용 가이드
 
 ## 구현된 기능
-✅ 계정별 하루 4회 운세 조회 제한
-✅ 서버 사이드 검증으로 클라이언트 우회 불가능
-✅ 별도 파일로 모듈화 (src/rateLimit.ts)
-✅ 데이터베이스 기반 제한 (D1)
+- 계정별 하루 4회 운세 조회 제한
+- 서버 사이드 검증으로 클라이언트 우회 불가능
+- 별도 파일로 모듈화 (src/rateLimit.ts)
+- 데이터베이스 기반 제한 (D1)
+- 중복 질문 방지 (정규화 후 비교)
+- 7일 이상 된 기록 자동 정리 (1% 확률로 백그라운드 실행)
+- 한국 시간(KST) 기준 날짜 처리
 
 ## 적용 방법
 
@@ -39,7 +42,8 @@ npm run deploy
 - `checkDailyLimit()`: 현재 사용 가능 여부 확인
 - `incrementDailyCount()`: 횟수 증가
 - `validateAndIncrement()`: 확인 + 증가를 한 번에 처리
-- `cleanupOldRecords()`: 7일 이상 된 기록 정리
+- `checkDuplicateQuestion()`: 중복 질문 방지 (KST 기준)
+- `cleanupOldRecords()`: 7일 이상 된 기록 정리 (자동 호출)
 
 #### `db/schema.sql` (업데이트)
 ```sql
@@ -64,11 +68,12 @@ CREATE TABLE IF NOT EXISTS daily_fortune_limits (
 
 ## 보안 특징
 
-✅ **서버 사이드 검증**: 모든 체크가 Cloudflare Workers에서 실행
-✅ **데이터베이스 저장**: D1에 저장되어 클라이언트에서 조작 불가
-✅ **JWT 인증**: 로그인한 사용자만 접근 가능
-✅ **UNIQUE 제약**: user_id + date 조합으로 중복 방지
-✅ **타임스탬프**: updated_at으로 마지막 사용 시간 추적
+- **서버 사이드 검증**: 모든 체크가 Cloudflare Workers에서 실행
+- **데이터베이스 저장**: D1에 저장되어 클라이언트에서 조작 불가
+- **JWT 인증**: 로그인한 사용자만 접근 가능
+- **UNIQUE 제약**: user_id + date 조합으로 중복 방지
+- **타임스탬프**: updated_at으로 마지막 사용 시간 추적
+- **KST 기준**: 날짜 계산 시 UTC+9 변환 적용
 
 ## 테스트 방법
 
