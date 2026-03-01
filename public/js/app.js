@@ -526,6 +526,18 @@ async function sendMessage() {
     chatHistory.push({ role: 'assistant', content: responseText });
     saveHistory();
 
+    // AI 응답을 서버 DB에 저장
+    if (responseText) {
+      fetch('/api/chat/save-response', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ aiResponse: responseText })
+      }).catch(err => console.error('AI 응답 저장 실패:', err));
+    }
+
   } catch (error) {
     console.error('Error:', error);
     addMessageToChat('ai', '오류가 발생했습니다. 다시 시도해주세요.');
