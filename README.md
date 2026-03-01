@@ -93,6 +93,9 @@ graph TB
 - 회원가입/로그인 기능
 - 사용자별 생년월일 정보 자동 연동
 - 세션 유지 및 자동 로그인
+- **회원가입 시 개인정보 수집 동의** (5개 항목 + 전체 동의 체크박스)
+  - 서버 측에서도 모든 동의 여부를 검증
+- **개인정보처리방침** 페이지 (`/privacy.html`)
 
 ### User Experience
 
@@ -150,23 +153,15 @@ graph TB
 
 **JWT Secret Configuration**
 - 개발 환경: `wrangler.jsonc`의 `vars.JWT_SECRET` 사용
-- 프로덕션 환경: Wrangler Secrets로 안전하게 관리
+- 프로덕션 환경: Wrangler Secrets로 안전하게 관리 (암호화 저장)
 
 ```bash
-# 프로덕션 환경에 JWT_SECRET 설정
+# 프로덕션 환경에 JWT_SECRET 설정 (암호화되어 저장됨)
 npx wrangler secret put JWT_SECRET
 # 프롬프트에서 강력한 시크릿 키 입력 (최소 64자 권장)
-
-# 로컬 개발 시에는 wrangler.jsonc의 vars 섹션 사용
-# {
-#   "vars": {
-#     "JWT_SECRET": "니들이 쓰고싶은거 쓰셈"
-#   }
-# }
-# ⚠️ 개발 환경에서도 충분히 복잡한 128자 이상의 랜덤 키 사용 권장
 ```
 
-⚠️ **보안 권장사항**: 프로덕션 환경에서는 반드시 `wrangler secret put` 명령어로 강력한 시크릿을 설정하세요.
+> **보안 권장사항**: 프로덕션 환경에서는 반드시 `wrangler secret put` 명령어로 강력한 시크릿을 설정하세요. `wrangler.jsonc`의 vars에 키를 직접 넣으면 GitHub에 노출됩니다.
 
 ### Password Security
 
@@ -341,7 +336,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ---
 
-**Built with ❤️ using:**
+**Built with:**
 - [Cloudflare Workers](https://workers.cloudflare.com/) - Edge computing platform
 - [Cloudflare D1](https://developers.cloudflare.com/d1/) - Serverless SQLite database
 - [Workers AI](https://developers.cloudflare.com/workers-ai/) - Llama 3.1 8B Instruct FP8
@@ -349,11 +344,17 @@ MIT License - see [LICENSE](LICENSE) file for details
 - TypeScript 5.8 - Type safety
 
 **프로젝트 현황:**
-- ✅ 핵심 운세 챗봇 기능 완성
-- ✅ 12별자리 통합 완료 (계산, UI 표시, AI 특성 반영)
-- ✅ JWT 인증 및 PBKDF2 보안
-- ✅ SSE 실시간 스트리밍
-- ✅ 모바일 최적화 UI
-- 🚧 자동화 테스트 (향후 추가 예정)
+- [x] 핵심 운세 챗봇 기능 완성
+- [x] 12별자리 통합 완료 (계산, UI 표시, AI 특성 반영)
+- [x] JWT 인증 및 PBKDF2 보안
+- [x] SSE 실시간 스트리밍
+- [x] 모바일 최적화 UI
+- [x] 개인정보 수집 동의 (회원가입 시 서버 검증)
+- [x] 개인정보처리방침 페이지
+- [x] 일일 운세 횟수 제한 및 중복 질문 방지
+- [x] AI 응답 DB 저장
+- [ ] 자동화 테스트 (향후 추가 예정)
 
 **Live Demo**: [https://kalpha.c01.kr](https://kalpha.c01.kr)
+
+(c) 2026 Kalpha-Dev (최재영). All Rights Reserved.
