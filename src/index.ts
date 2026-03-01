@@ -4,7 +4,7 @@
  * @license MIT
  */
 import { Env, ChatMessage, ZODIAC_SIGNS, ZodiacSign } from "./types";
-import { validateAndIncrement } from "./rateLimit";
+import { validateAndIncrement, cleanupOldRecords } from "./rateLimit";
 
 const MODEL_ID = "@cf/meta/llama-3.1-8b-instruct-fp8";
 
@@ -503,6 +503,11 @@ async function handleChatRequest(
             await env.DB.prepare(
               "INSERT INTO chat_history (user_id, user_message, ai_response) VALUES ((SELECT id FROM users WHERE user_id = ?), ?, ?)"
             ).bind(userId, userLastMessage, null).run();
+          }
+
+          // 약 1% 확률로 오래된 제한 기록 정리 (7일 이상)
+          if (Math.random() < 0.01) {
+            await cleanupOldRecords(env);
           }
         } catch (e) {
           console.error("Failed to update stats:", e);

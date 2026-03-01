@@ -28,12 +28,12 @@ function getTodayString(): string {
  */
 function isSimilarQuestion(question1: string, question2: string): boolean {
   // 공백, 특수문자 제거 후 비교
-  const normalize = (str: string) => 
+  const normalize = (str: string) =>
     str.replace(/[\s\.,!?~ㅋㅎㅜㅠ]/g, '').trim();
-  
+
   const norm1 = normalize(question1);
   const norm2 = normalize(question2);
-  
+
   // 완전히 동일한 경우만 중복으로 판단
   return norm1 === norm2;
 }
@@ -51,21 +51,21 @@ export async function checkDuplicateQuestion(
   env: Env
 ): Promise<boolean> {
   const today = getTodayString();
-  
+
   // 오늘 사용자의 모든 질문 가져오기
   const result = await env.DB.prepare(`
     SELECT user_message FROM chat_history 
     WHERE user_id = (SELECT id FROM users WHERE user_id = ?)
-    AND DATE(created_at) = ?
+    AND DATE(created_at, '+9 hours') = ?
     ORDER BY created_at DESC
   `)
     .bind(userId, today)
     .all();
-  
+
   if (!result.results || result.results.length === 0) {
     return false;
   }
-  
+
   // 각 질문과 비교
   for (const row of result.results) {
     const prevQuestion = row.user_message as string;
@@ -73,7 +73,7 @@ export async function checkDuplicateQuestion(
       return true; // 중복 질문 발견
     }
   }
-  
+
   return false;
 }
 
@@ -85,14 +85,14 @@ export async function checkDuplicateQuestion(
  */
 export async function getDailyRequestCount(userId: string, env: Env): Promise<number> {
   const today = getTodayString();
-  
+
   const result = await env.DB.prepare(`
     SELECT count FROM daily_fortune_limits 
     WHERE user_id = ? AND date = ?
   `)
     .bind(userId, today)
     .first();
-  
+
   return result ? (result.count as number) : 0;
 }
 
@@ -103,12 +103,12 @@ export async function getDailyRequestCount(userId: string, env: Env): Promise<nu
  * @returns { allowed: boolean, remaining: number, message: string }
  */
 export async function checkDailyLimit(
-  userId: string, 
+  userId: string,
   env: Env
 ): Promise<{ allowed: boolean; remaining: number; message: string }> {
   const count = await getDailyRequestCount(userId, env);
   const remaining = Math.max(0, MAX_DAILY_REQUESTS - count);
-  
+
   if (count >= MAX_DAILY_REQUESTS) {
     return {
       allowed: false,
@@ -116,7 +116,7 @@ export async function checkDailyLimit(
       message: `오늘의 운세 조회 횟수(${MAX_DAILY_REQUESTS}회)를 모두 사용하셨습니다. 내일 다시 이용해주세요. 🌙`
     };
   }
-  
+
   return {
     allowed: true,
     remaining: remaining - 1, // 이번 요청 후 남은 횟수
@@ -131,7 +131,7 @@ export async function checkDailyLimit(
  */
 export async function incrementDailyCount(userId: string, env: Env): Promise<void> {
   const today = getTodayString();
-  
+
   // UPSERT: 레코드가 없으면 INSERT, 있으면 UPDATE
   await env.DB.prepare(`
     INSERT INTO daily_fortune_limits (user_id, date, count, updated_at)
@@ -167,10 +167,10 @@ export async function validateAndIncrement(
       message: '같은 질문은 하루에 한 번만 가능합니다. 다른 질문을 해주세요! 🔄'
     };
   }
-  
+
   // 2. 일일 횟수 제한 체크
   const check = await checkDailyLimit(userId, env);
-  
+
   if (!check.allowed) {
     return {
       success: false,
@@ -178,10 +178,10 @@ export async function validateAndIncrement(
       message: check.message
     };
   }
-  
+
   // 3. 횟수 증가
   await incrementDailyCount(userId, env);
-  
+
   return {
     success: true,
     remaining: check.remaining,
@@ -196,7 +196,7 @@ export async function validateAndIncrement(
  */
 export async function resetDailyCount(userId: string, env: Env): Promise<void> {
   const today = getTodayString();
-  
+
   await env.DB.prepare(`
     DELETE FROM daily_fortune_limits 
     WHERE user_id = ? AND date = ?
@@ -214,13 +214,13 @@ export async function cleanupOldRecords(env: Env): Promise<number> {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   const cutoffDate = sevenDaysAgo.toISOString().split('T')[0];
-  
+
   const result = await env.DB.prepare(`
     DELETE FROM daily_fortune_limits 
     WHERE date < ?
   `)
     .bind(cutoffDate)
     .run();
-  
+
   return result.meta?.changes || 0;
 }
