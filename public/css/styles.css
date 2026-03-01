@@ -327,6 +327,128 @@ a {
     background: rgba(199, 215, 249, 0.5);
 }
 
+/* 개인정보 동의 섹션 */
+.consent-section {
+    margin: 4px 0 8px;
+    padding: 14px;
+    border-radius: 12px;
+    background: rgba(31, 35, 82, 0.8);
+    border: 1px solid rgba(199, 215, 249, 0.15);
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.consent-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #FAE8D3;
+}
+
+.consent-desc {
+    font-size: 11px;
+    opacity: 0.7;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.consent-all-wrap {
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(199, 215, 249, 0.15);
+}
+
+.consent-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.consent-label-all {
+    font-weight: 600;
+    font-size: 13px;
+    color: #FAE8D3;
+}
+
+.consent-label input[type="checkbox"] {
+    display: none;
+}
+
+.consent-check {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(199, 215, 249, 0.4);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-top: 1px;
+}
+
+.consent-label input[type="checkbox"]:checked+.consent-check {
+    background: #9DB2F5;
+    border-color: #9DB2F5;
+}
+
+.consent-label input[type="checkbox"]:checked+.consent-check::after {
+    content: '✓';
+    color: #161838;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.consent-items {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.consent-items .consent-label span strong {
+    color: #B3C5F9;
+}
+
+.consent-section::-webkit-scrollbar {
+    width: 4px;
+}
+
+.consent-section::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.consent-section::-webkit-scrollbar-thumb {
+    background: rgba(199, 215, 249, 0.2);
+    border-radius: 4px;
+}
+
+/* 하단 저작권 */
+.site-footer {
+    text-align: center;
+    padding: 12px 0 8px;
+    font-size: 12px;
+    opacity: 0.5;
+    color: #C7D7F9;
+}
+
+.site-footer .privacy-link {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: #9DB2F5;
+    text-decoration: underline;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.site-footer .privacy-link:hover {
+    opacity: 1;
+}
+
 /* 반응형 디자인 */
 
 /* 태블릿 (1024px 이하) */
@@ -550,7 +672,7 @@ a {
     }
 
     /* 인증 모달 반응형 */
-    #auth-modal > div {
+    #auth-modal>div {
         width: 90% !important;
         max-width: 350px !important;
         padding: 20px !important;

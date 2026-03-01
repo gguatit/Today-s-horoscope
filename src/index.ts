@@ -80,18 +80,24 @@ export default {
  */
 async function handleAuthRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
-  
+
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
 
   try {
     const body = await request.json() as any;
-    
+
     if (url.pathname === "/api/auth/register") {
-      const { userId, userName, password, birthdate } = body;
+      const { userId, userName, password, birthdate, consents } = body;
       if (!userId || !userName || !password) {
         return new Response("아이디, 이름, 비밀번호는 필수입니다.", { status: 400 });
+      }
+
+      // 개인정보 수집 동의 검증
+      const requiredConsents = ['consent_name', 'consent_birthdate', 'consent_ip', 'consent_chat', 'consent_usage'];
+      if (!consents || typeof consents !== 'object' || !requiredConsents.every(key => consents[key] === true)) {
+        return new Response("모든 개인정보 수집 항목에 동의해야 합니다.", { status: 400 });
       }
 
       // 사용자 존재 여부 확인
@@ -124,8 +130,8 @@ async function handleAuthRequest(request: Request, env: Env): Promise<Response> 
         "INSERT INTO users (user_id, user_name, password_hash, salt, birthdate) VALUES (?, ?, ?, ?, ?)"
       ).bind(userId, userName, passwordHash, salt, birthdate || null).run();
 
-      return new Response(JSON.stringify({ success: true }), { 
-        headers: { "Content-Type": "application/json" } 
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { "Content-Type": "application/json" }
       });
     }
 
@@ -151,7 +157,7 @@ async function handleAuthRequest(request: Request, env: Env): Promise<Response> 
         // 마지막 로그인 시간 및 위치 업데이트
         const cf = request.cf as any;
         const location = cf ? `${cf.country || 'Unknown'}, ${cf.city || 'Unknown'}` : 'Unknown';
-        
+
         try {
           await env.DB.prepare(
             "UPDATE users SET last_login = CURRENT_TIMESTAMP, location = ? WHERE id = ?"
@@ -162,18 +168,18 @@ async function handleAuthRequest(request: Request, env: Env): Promise<Response> 
         }
 
         // JWT 토큰 생성
-        const token = await signJWT({ 
-          sub: user.id, 
-          userId: user.user_id, 
-          userName: user.user_name, 
-          birthdate: user.birthdate 
+        const token = await signJWT({
+          sub: user.id,
+          userId: user.user_id,
+          userName: user.user_name,
+          birthdate: user.birthdate
         }, env);
 
-        return new Response(JSON.stringify({ 
-          token, 
-          userId: user.user_id, 
-          userName: user.user_name, 
-          birthdate: user.birthdate 
+        return new Response(JSON.stringify({
+          token,
+          userId: user.user_id,
+          userName: user.user_name,
+          birthdate: user.birthdate
         }), {
           headers: { "Content-Type": "application/json" }
         });
@@ -211,7 +217,7 @@ async function hashPassword(password: string, salt: string): Promise<string> {
     true,
     ["encrypt", "decrypt"]
   );
-  
+
   const exported = await crypto.subtle.exportKey("raw", key) as ArrayBuffer;
   return btoa(String.fromCharCode(...new Uint8Array(exported)));
 }
@@ -232,7 +238,7 @@ function sanitize(str: string): string {
 
 async function signJWT(payload: any, env: Env): Promise<string> {
   const header = { alg: "HS256", typ: "JWT" };
-  
+
   // 12시간 후 만료 (현재 시간 + 12시간을 초 단위로)
   const expirationTime = Math.floor(Date.now() / 1000) + (12 * 60 * 60);
   const payloadWithExp = {
@@ -240,13 +246,13 @@ async function signJWT(payload: any, env: Env): Promise<string> {
     exp: expirationTime,
     iat: Math.floor(Date.now() / 1000) // 발급 시간
   };
-  
+
   const encodedHeader = base64UrlEncode(JSON.stringify(header));
   const encodedPayload = base64UrlEncode(JSON.stringify(payloadWithExp));
-  
+
   const data = `${encodedHeader}.${encodedPayload}`;
   const signature = await hmacSha256(data, env.JWT_SECRET);
-  
+
   return `${data}.${signature}`;
 }
 
@@ -276,17 +282,17 @@ async function verifyJWT(token: string, env: Env): Promise<any | null> {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
-    
+
     const [encodedHeader, encodedPayload, providedSignature] = parts;
     const data = `${encodedHeader}.${encodedPayload}`;
     const expectedSignature = await hmacSha256(data, env.JWT_SECRET);
-    
+
     if (providedSignature !== expectedSignature) return null;
-    
+
     // Decode payload
     const payloadJson = atob(encodedPayload.replace(/-/g, "+").replace(/_/g, "/"));
     const payload = JSON.parse(payloadJson);
-    
+
     // 만료 시간 검증
     if (payload.exp) {
       const currentTime = Math.floor(Date.now() / 1000);
@@ -295,7 +301,7 @@ async function verifyJWT(token: string, env: Env): Promise<any | null> {
         return null;
       }
     }
-    
+
     return payload;
   } catch (e) {
     return null;
@@ -320,10 +326,10 @@ async function verifyJWT(token: string, env: Env): Promise<any | null> {
 function calculateZodiacSign(birthdate: string): ZodiacSign | null {
   // 입력 검증: YYYY-MM-DD 형식 (길이 10)
   if (!birthdate || birthdate.length !== 10) return null;
-  
+
   // 월-일 추출: "1990-03-21" -> "0321"
   const mmdd = birthdate.substring(5).replace("-", "");
-  
+
   // 12별자리 중 일치하는 별자리 찾기
   for (const sign of ZODIAC_SIGNS) {
     // 연도 경계 처리: start > end인 경우 (예: 염소자리 1222~0119)
@@ -340,7 +346,7 @@ function calculateZodiacSign(birthdate: string): ZodiacSign | null {
       }
     }
   }
-  
+
   // 일치하는 별자리가 없으면 null 반환
   return null;
 }
@@ -355,7 +361,7 @@ async function handleSaveResponse(
   // JWT 인증 확인
   const authHeader = request.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "로그인이 필요합니다." }), { 
+    return new Response(JSON.stringify({ error: "로그인이 필요합니다." }), {
       status: 401,
       headers: { "Content-Type": "application/json" }
     });
@@ -364,7 +370,7 @@ async function handleSaveResponse(
   const token = authHeader.substring(7);
   const payload = await verifyJWT(token, env);
   if (!payload) {
-    return new Response(JSON.stringify({ error: "유효하지 않은 인증 토큰입니다." }), { 
+    return new Response(JSON.stringify({ error: "유효하지 않은 인증 토큰입니다." }), {
       status: 401,
       headers: { "Content-Type": "application/json" }
     });
@@ -375,7 +381,7 @@ async function handleSaveResponse(
 
   try {
     const { aiResponse } = await request.json() as { aiResponse: string };
-    
+
     if (!aiResponse) {
       return new Response(JSON.stringify({ error: "AI 응답이 필요합니다." }), {
         status: 400,
@@ -412,7 +418,7 @@ async function handleChatRequest(
   // JWT 인증 확인
   const authHeader = request.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "로그인이 필요합니다." }), { 
+    return new Response(JSON.stringify({ error: "로그인이 필요합니다." }), {
       status: 401,
       headers: { "Content-Type": "application/json" }
     });
@@ -421,7 +427,7 @@ async function handleChatRequest(
   const token = authHeader.substring(7); // Remove "Bearer " prefix
   const payload = await verifyJWT(token, env);
   if (!payload) {
-    return new Response(JSON.stringify({ error: "유효하지 않은 인증 토큰입니다." }), { 
+    return new Response(JSON.stringify({ error: "유효하지 않은 인증 토큰입니다." }), {
       status: 401,
       headers: { "Content-Type": "application/json" }
     });
@@ -438,10 +444,10 @@ async function handleChatRequest(
 
     // 시스템 프롬프트 강제 적용 및 기존 system 메시지 제거
     const nonSystem = messages.filter((msg) => msg.role !== "system");
-    
+
     // 사용자의 실제 질문 추출 (시스템 태그 제외)
-    const userMessages = nonSystem.filter(m => 
-      m.role === "user" && 
+    const userMessages = nonSystem.filter(m =>
+      m.role === "user" &&
       m.content &&
       !m.content.startsWith("[생년월일]") &&
       !m.content.startsWith("[운세날짜]") &&
@@ -452,30 +458,30 @@ async function handleChatRequest(
     // ===== 일일 운세 횟수 제한 + 중복 질문 체크 =====
     if (userLastMessage) {
       const limitCheck = await validateAndIncrement(userId, userLastMessage, env);
-      
+
       if (!limitCheck.success) {
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
           error: limitCheck.message,
           remaining: limitCheck.remaining
-        }), { 
+        }), {
           status: 429, // Too Many Requests
           headers: { "Content-Type": "application/json" }
         });
       }
     }
-    
+
     // 채팅 기록에서 생년월일 추출 후 별자리 계산
     let zodiacInfo = "";
     const birthdateMsg = nonSystem.find((m) => m.content && m.content.startsWith("[생년월일]"));
     if (birthdateMsg) {
       const birthdate = birthdateMsg.content.replace("[생년월일]", "").trim();
       const zodiac = calculateZodiacSign(birthdate);
-      
+
       if (zodiac) {
-        zodiacInfo = `\n\n[별자리 정보] 사용자의 별자리: ${zodiac.name} (${zodiac.nameEn}, ${zodiac.start.substring(0,2)}/${zodiac.start.substring(2)} - ${zodiac.end.substring(0,2)}/${zodiac.end.substring(2)}). 특성: ${zodiac.traits}`;
+        zodiacInfo = `\n\n[별자리 정보] 사용자의 별자리: ${zodiac.name} (${zodiac.nameEn}, ${zodiac.start.substring(0, 2)}/${zodiac.start.substring(2)} - ${zodiac.end.substring(0, 2)}/${zodiac.end.substring(2)}). 특성: ${zodiac.traits}`;
       }
     }
-    
+
     // 최종 메시지 배열: 시스템 프롬프트(+ 별자리 정보) + 사용자 메시지들
     const enforcedMessages = [
       { role: "system", content: SYSTEM_PROMPT + zodiacInfo },
@@ -490,7 +496,7 @@ async function handleChatRequest(
           await env.DB.prepare("UPDATE users SET total_requests = total_requests + 1 WHERE user_id = ?")
             .bind(userId)
             .run();
-          
+
           // 사용자 질문 기록 (AI 응답은 일단 null로 저장)
           // user_id는 users 테이블의 INTEGER id를 참조하므로 서브쿼리 사용
           if (userLastMessage) {

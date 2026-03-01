@@ -1,23 +1,25 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>운세 AI 챗봇</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
     <div class="wrap">
         <div class="navbar">
-          <a class="navbar-brand" style="cursor: default;">운세 AI 챗봇</a>
+            <a class="navbar-brand" style="cursor: default;">운세 AI 챗봇</a>
             <div class="navbar-menu">
                 <a id="login-btn" style="cursor: pointer;">로그인</a>
                 <a id="signup-btn" style="cursor: pointer;">회원가입</a>
                 <span id="user-info" style="display:none"></span>
                 <a id="logout-btn" style="cursor: pointer; display:none">로그아웃</a>
-          </div>
+            </div>
         </div>
-        
+
         <!-- 중앙 내용 -->
         <div class="bodybox">
             <!-- 왼쪽 사이드바 -->
@@ -28,7 +30,7 @@
                          background: rgba(255, 255, 255, 0.05); font-size: 14px; 
                          text-align: center;"></div>
                 </div>
-                
+
                 <!-- 별자리 정보 표시 -->
                 <div class="zodiac-info" id="zodiac-info" style="display: none; margin-bottom: 14px;">
                     <div style="padding: 14px; border-radius: 14px; background: #2B2F6F; text-align: center;">
@@ -36,7 +38,7 @@
                         <div id="zodiac-dates" style="font-size: 12px; opacity: 0.8;"></div>
                     </div>
                 </div>
-                
+
                 <!-- 별자리 설명 -->
                 <div class="zodiac-desc" id="zodiac-desc" style="display: none;">
                     <p></p>
@@ -46,31 +48,31 @@
             <!-- 중앙 AI 채팅 -->
             <main class="chat-main" data-mode="chat">
                 <div class="chat-messages" id="chat-messages">
-                   <div class="message ai">
-                    <div class="bubble">
-                         안녕하세요! 오늘의 운세를 알려드릴게요 ✨
+                    <div class="message ai">
+                        <div class="bubble">
+                            안녕하세요! 오늘의 운세를 알려드릴게요 ✨
+                        </div>
                     </div>
-                   </div>
                 </div>
-                
+
                 <div id="typing-indicator" style="display:none; padding: 10px; 
                      font-size: 14px; opacity: 0.7; text-align: center;">
                     AI가 답변을 작성 중입니다...
                 </div>
-            
+
                 <div class="chat-input">
                     <input type="text" id="user-input" placeholder="운세에 대해 물어보세요..." disabled>
                     <button id="send-button" disabled>전송</button>
                 </div>
             </main>
-        
+
             <!-- 오른쪽 사이드바 -->
             <aside class="sidebar-right">
                 <div class="today-date" id="today-date">
                     <p>2026.01.31</p>
                     <span>Friday</span>
                 </div>
-            
+
                 <ul class="chat-history" id="chat-history">
                     <li>오늘의 운세</li>
                     <li>연애운 질문</li>
@@ -89,19 +91,54 @@
              padding: 30px; width: 400px; max-width: 90%;">
             <h2 id="auth-title" style="margin-bottom: 20px; text-align: center;">로그인</h2>
             <form id="auth-form">
-                <input type="text" id="auth-userid" placeholder="아이디 (영문/숫자 4-8자)" 
-                       required style="width: 100%; padding: 12px; margin-bottom: 12px; 
+                <input type="text" id="auth-userid" placeholder="아이디 (영문/숫자 4-8자)" required style="width: 100%; padding: 12px; margin-bottom: 12px; 
                        border-radius: 10px; border: none; background: #1F2352;">
-                <input type="text" id="auth-username" placeholder="이름 (2-4자)" 
-                       style="width: 100%; padding: 12px; margin-bottom: 12px; 
+                <input type="text" id="auth-username" placeholder="이름 (2-4자)" style="width: 100%; padding: 12px; margin-bottom: 12px; 
                        border-radius: 10px; border: none; background: #1F2352; display: none;">
-                <input type="password" id="auth-password" placeholder="비밀번호 (8-20자)" 
-                       required style="width: 100%; padding: 12px; margin-bottom: 12px; 
+                <input type="password" id="auth-password" placeholder="비밀번호 (8-20자)" required style="width: 100%; padding: 12px; margin-bottom: 12px; 
                        border-radius: 10px; border: none; background: #1F2352;">
-                <input type="text" id="auth-birthdate" placeholder="생년월일 8자리 (선택)" 
-                       maxlength="8" inputmode="numeric" 
-                       style="width: 100%; padding: 12px; margin-bottom: 12px; 
-                       border-radius: 10px; border: none; background: #1F2352; display: none;">
+                <input type="text" id="auth-birthdate" placeholder="생년월일 8자리 (선택)" maxlength="8" inputmode="numeric"
+                    style="width: 100%; padding: 12px; margin-bottom: 12px; 
+                        border-radius: 10px; border: none; background: #1F2352; display: none;">
+                <!-- 개인정보 수집 동의 섹션 (회원가입 시에만 표시) -->
+                <div id="consent-section" class="consent-section" style="display: none;">
+                    <p class="consent-title">📋 개인정보 수집 및 이용 동의</p>
+                    <p class="consent-desc">서비스 이용을 위해 아래 개인정보를 수집합니다. 모든 항목에 동의해야 회원가입이 가능합니다.</p>
+                    <div class="consent-all-wrap">
+                        <label class="consent-label consent-label-all">
+                            <input type="checkbox" id="consent-all">
+                            <span class="consent-check"></span>
+                            <span>전체 동의</span>
+                        </label>
+                    </div>
+                    <div class="consent-items">
+                        <label class="consent-label">
+                            <input type="checkbox" class="consent-item" id="consent-name">
+                            <span class="consent-check"></span>
+                            <span><strong>이름</strong> — 서비스 내 사용자 식별 및 표시에 사용됩니다.</span>
+                        </label>
+                        <label class="consent-label">
+                            <input type="checkbox" class="consent-item" id="consent-birthdate">
+                            <span class="consent-check"></span>
+                            <span><strong>생년월일</strong> — 별자리 계산 및 맞춤형 운세 생성에 사용됩니다.</span>
+                        </label>
+                        <label class="consent-label">
+                            <input type="checkbox" class="consent-item" id="consent-ip">
+                            <span class="consent-check"></span>
+                            <span><strong>IP 주소 및 접속 위치</strong> — 로그인 시 보안 목적으로 자동 기록됩니다.</span>
+                        </label>
+                        <label class="consent-label">
+                            <input type="checkbox" class="consent-item" id="consent-chat">
+                            <span class="consent-check"></span>
+                            <span><strong>채팅 내용</strong> — 사용자 질문 및 AI 운세 응답이 서버에 저장됩니다.</span>
+                        </label>
+                        <label class="consent-label">
+                            <input type="checkbox" class="consent-item" id="consent-usage">
+                            <span class="consent-check"></span>
+                            <span><strong>서비스 이용 기록</strong> — 운세 조회 횟수 등 이용 통계가 기록됩니다.</span>
+                        </label>
+                    </div>
+                </div>
                 <div style="display: flex; gap: 10px; margin-top: 16px;">
                     <button type="submit" style="flex: 1; padding: 12px; border-radius: 10px; 
                             border: none; background: #9DB2F5; color: #161838; cursor: pointer; 
@@ -115,8 +152,14 @@
             </form>
         </div>
     </div>
+    <!-- 하단 저작권 -->
+    <footer class="site-footer">
+        <p>© 2026 Kalpha-Dev (최재영). All Rights Reserved.</p>
+        <a href="/privacy.html" class="privacy-link">개인정보처리방침</a>
+    </footer>
 
     <script src="js/easter-egg.js"></script>
     <script src="js/app.js"></script>
 </body>
+
 </html>
