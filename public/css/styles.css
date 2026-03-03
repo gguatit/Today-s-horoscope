@@ -488,7 +488,22 @@ a {
 
 /* 작은 태블릿/큰 모바일 (768px 이하) */
 @media screen and (max-width: 768px) {
+    body {
+        height: auto;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .wrap {
+        height: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
     .bodybox {
+        flex: 1;
         flex-direction: column;
         height: auto;
         min-height: calc(100vh - 60px);
