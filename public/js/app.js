@@ -458,21 +458,6 @@ async function sendMessage() {
         return;
       }
 
-      // 일일 횟수 제한 체크 (429 상태 코드)
-      if (response.status === 429) {
-        try {
-          const errorData = await response.json();
-          addMessageToChat('ai', errorData.error || '오늘의 운세 조회 횟수를 모두 사용하셨습니다.');
-        } catch (e) {
-          addMessageToChat('ai', '오늘의 운세 조회 횟수(4회)를 모두 사용하셨습니다. 내일 다시 이용해주세요. 🌙');
-        }
-        typingIndicator.style.display = 'none';
-        isProcessing = false;
-        userInput.disabled = false;
-        sendButton.disabled = false;
-        return;
-      }
-
       throw new Error('Failed to get response');
     }
 

@@ -4,7 +4,6 @@
  * @license MIT
  */
 import { Env, ChatMessage, ZODIAC_SIGNS, ZodiacSign } from "./types";
-import { validateAndIncrement, cleanupOldRecords } from "./rateLimit";
 
 const MODEL_ID = "@cf/meta/llama-3.1-8b-instruct-fp8";
 
@@ -455,21 +454,6 @@ async function handleChatRequest(
     );
     const userLastMessage = userMessages.slice(-1)[0]?.content || "";
 
-    // ===== 일일 운세 횟수 제한 + 중복 질문 체크 =====
-    if (userLastMessage) {
-      const limitCheck = await validateAndIncrement(userId, userLastMessage, env);
-
-      if (!limitCheck.success) {
-        return new Response(JSON.stringify({
-          error: limitCheck.message,
-          remaining: limitCheck.remaining
-        }), {
-          status: 429, // Too Many Requests
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-    }
-
     // 채팅 기록에서 생년월일 추출 후 별자리 계산
     let zodiacInfo = "";
     const birthdateMsg = nonSystem.find((m) => m.content && m.content.startsWith("[생년월일]"));
@@ -505,10 +489,6 @@ async function handleChatRequest(
             ).bind(userId, userLastMessage, null).run();
           }
 
-          // 약 1% 확률로 오래된 제한 기록 정리 (7일 이상)
-          if (Math.random() < 0.01) {
-            await cleanupOldRecords(env);
-          }
         } catch (e) {
           console.error("Failed to update stats:", e);
         }
