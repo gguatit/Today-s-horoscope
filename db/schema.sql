@@ -25,3 +25,11 @@ CREATE TABLE IF NOT EXISTS chat_history (
 -- 인덱스 추가 (빠른 조회를 위해)
 CREATE INDEX IF NOT EXISTS idx_chat_history_user_id ON chat_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_history_created_at ON chat_history(created_at);
+
+-- 로그인 시도 횟수 추적 (브루트포스 방지)
+CREATE TABLE IF NOT EXISTS login_attempts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ip TEXT NOT NULL,
+  attempted_at INTEGER NOT NULL -- Unix timestamp
+);
+CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip);

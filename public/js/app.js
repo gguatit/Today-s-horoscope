@@ -411,6 +411,9 @@ async function sendMessage(message) {
     }
   }
 
+  // 최근 20개 메시지만 전송 (서버 부하 및 AI 토큰 초과 방지)
+  const recentHistory = chatHistory.slice(-20);
+
   try {
     const response = await fetch('/api/chat', {
       method: 'POST',
@@ -418,7 +421,7 @@ async function sendMessage(message) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authToken}`
       },
-      body: JSON.stringify({ messages: chatHistory }),
+      body: JSON.stringify({ messages: recentHistory }),
     });
 
     if (!response.ok) {
@@ -473,6 +476,8 @@ async function sendMessage(message) {
     }
 
     chatHistory.push({ role: 'assistant', content: responseText });
+    // 로컬 히스토리 100개 초과 시 오래된 것 제거 (localStorage 용량 보호)
+    if (chatHistory.length > 100) chatHistory = chatHistory.slice(-100);
     saveHistory();
 
     // AI 응답을 서버 DB에 저장
