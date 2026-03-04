@@ -160,26 +160,111 @@ env.DB.prepare("SELECT * FROM users WHERE username = ?").bind(input);
 
 ---
 
-## 4. 보안 취약점 현황
+### D. Timing Attack 방어 (JWT 서명 검증)
+
+```typescript
+// 위험: 일반 문자열 비교
+if (providedSignature !== expectedSignature) ...
+// 북일치 위치에 따라 수행 시간 다름 -> 서명 추측 가능
+
+// 안전: 상수 시간 비교 (timingSafeEqual)
+// HMAC 연산 후 XOR 비교 -> 언제나 동일한 시간 소요
+```
+
+**무엇이 문제인가?**
+```
+일반 == 비교:
+  "A" != "Z" -> 1번만에 판단 (0.001ms)
+  "ABCDE" != "ABCDZ" -> 5번 비교 (0.005ms)
+  -> 같은 자리가 많을수록 시간 더 걸림 -> 해커가 서명 추측 가능
+
+상수 시간 비교:
+  항상 모든 바이트 전체 비교 -> 시간 차이 없음 -> 추측 불가
+```
+
+---
+
+### E. User Enumeration 방어
+
+```
+위험한 방식 (제거됨):
+  존재하지 않는 아이디 -> "존재하지 않는 아이디입니다."
+  틀린 비밀번호  -> "비밀번호가 일치하지 않습니다."
+  -> 해커가 유효한 아이디 목록 파악 가능
+
+안전한 방식 (현재):
+  두 경우 모두 -> "아이디 또는 비밀번호가 올바르지 않습니다."
+  -> 어떤 정보에 대한 힌트도 없음
+```
+
+---
+
+### F. 로그인 Rate Limiting (브루트포스 방어)
+
+```구조:
+login_attempts 테이블 (D1 데이터베이스)
+  - ip: 접속 IP 주소
+  - attempted_at: 시도 시간 (Unix timestamp)
+
+방어 로직:
+  IP당 15분 이내 5회 초과 -> 429 Too Many Requests
+  로그인 성공 -> 해당 IP의 실패 기록 자동 정리
+```
+
+---
+
+### G. Prompt Injection 방어
+
+```위험한 시나리오:
+  클라이언트가 messages 배열에 가짜 assistant 메시지를 주입
+  -> AI가 재쉽지를 받알다고 착각하게 만들어 동작 조작 가능
+
+보호 조치 (현재):
+  1. 허용 role: user / assistant 만 (클라이언트에서 system 주입 차단)
+  2. 메시지 최대 20개 제한 (서버 측)
+  3. 생년월일은 JWT payload에서만 사용 ([생년월일] 클라이언트 태그 무시)
+```
+
+---
+
+### H. 보안 헤더
+
+모든 응답에 자동 적용:
+```
+X-Content-Type-Options: nosniff         <- MIME 타입 스니핀 방지
+X-Frame-Options: DENY                   <- 클릭재킹 방지
+Referrer-Policy: strict-origin-...     <- 문서 유입 차단
+Permissions-Policy: camera=(), ...     <- 불필요 권한 사전 차단
+```
 
 ### 해결됨
 
 **1. JWT 비밀키 하드코딩** -> Cloudflare Secrets로 암호화 저장 (해결 완료)
 
-**2. 토큰 만료 시간 없음** -> 12시간 만료 설정 (해결 완료)
+**2. JWT 토큰 만료 시간 없음** -> 12시간 만료 설정 (해결 완료)
 
-**4. Rate Limiting 없음** -> 일일 4회 제한 + 중복 질문 방지 (해결 완료)
+**3. User Enumeration** -> 로그인 실패 메시지 단일화 (해결 완료)
+
+**4. JWT Timing Attack** -> 상수 시간 서명 검증 (timingSafeEqual) (해결 완료)
+
+**5. 로그인 Rate Limiting 없음** -> IP당 15분 5회 제한 + D1 로그 (해결 완료)
+
+**6. Prompt Injection** -> 허용 role 필터링 / 메시지 20개 제한 / JWT birthdate 사용 (해결 완료)
+
+**7. 보안 헤더 누락** -> X-Frame-Options, X-Content-Type-Options 등 4개 헤더 적용 (해결 완료)
+
+**8. sanitize() 미호출** -> DB 저장 전 XSS 정제 함수 실제 적용 (해결 완료)
+
+**9. 생년월일 서버 검증 누락** -> YYYY-MM-DD 정규식 검증 추가 (해결 완료)
+
+**10. chatHistory 무제한 성장** -> 전송 20개 / 로칼 100개 제한 (해결 완료)
 
 ### 미해결 (심각도: 중간)
 
-**3. LocalStorage 토큰 저장**
+**LocalStorage JWT 저장**
 - JavaScript로 접근 가능
 - XSS 공격 시 탈취 위험
 - 해결: HttpOnly Cookie 사용
-
-**로그인 시도 제한 없음**
-- 무제한 로그인 시도 (비밀번호 무작위 대입)
-- 해결: 5회 실패 시 15분 대기
 
 ---
 
@@ -188,13 +273,18 @@ env.DB.prepare("SELECT * FROM users WHERE username = ?").bind(input);
 ### 해결 완료
 1. JWT_SECRET 환경 변수화 -> Cloudflare Secrets
 2. JWT 만료 시간 추가 -> 12시간
-3. 운세 횟수 제한 -> 일일 4회 + 중복 질문 방지
-4. 개인정보 수집 동의 + 개인정보처리방침
+3. User Enumeration 방지 -> 로그인 실패 메시지 단일화
+4. JWT Timing Attack 방지 -> timingSafeEqual
+5. 로그인 Rate Limiting -> IP당 15분 5회
+6. Prompt Injection 방어 -> role 필터링 / 메시지 제한 / JWT birthdate
+7. 보안 헤더 4개 적용
+8. sanitize() DB 저장 전 실제 적용
+9. 생년월일 서버 측 형식 검증
+10. chatHistory 전송/저장 상한 제한
+11. 개인정보 수집 동의 + 개인정보처리방침
 
 ### 우선 개선 (미해결)
-1. HttpOnly Cookie 적용 (2시간, 무료)
-2. 로그인 시도 제한 (2시간, 무료)
-3. CORS 정책 설정 (1시간, 무료)
+1. HttpOnly Cookie 적용 (LocalStorage JWT 탈취 방지)
 
 ---
 
@@ -222,11 +312,13 @@ env.DB.prepare("SELECT * FROM users WHERE username = ?").bind(input);
 - 빠른 글로벌 응답 속도
 - 확장 가능한 서버리스 구조
 - 저렴한 운영 비용
+- PBKDF2 + 역할 기반 인증으로 비밀번호 안전
+- User Enumeration / Timing Attack / Rate Limiting 등 주요 공격 벡터 대부분 차단
+- Prompt Injection 방어 및 보안 헤더 적용
 - 개인정보 수집 동의 및 처리방침 완비
 
 ### 개선 필요
 - LocalStorage 대신 HttpOnly Cookie 적용
-- 로그인 시도 제한 추가
 
 ### 최종 평가
 현대적이고 효율적인 기술 스택이며,
@@ -244,5 +336,5 @@ env.DB.prepare("SELECT * FROM users WHERE username = ?").bind(input);
 
 ---
 
-작성일: 2026년 1월 5일
-문서 버전: 3.0 (보안 개선 현황 반영)
+작성일: 2026년 3월 4일
+문서 버전: 4.0 (보안 개선 10항목 추가 반영)
