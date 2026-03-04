@@ -351,7 +351,6 @@ MIT License - see [LICENSE](LICENSE) file for details
 - [x] 모바일 최적화 UI
 - [x] 개인정보 수집 동의 (회원가입 시 서버 검증)
 - [x] 개인정보처리방침 페이지
-- [x] 일일 운세 횟수 제한 및 중복 질문 방지
 - [x] AI 응답 DB 저장
 - [ ] 자동화 테스트 (향후 추가 예정)
 

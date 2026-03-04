@@ -238,9 +238,6 @@ function updateAuthUI() {
   const signupBtn = document.getElementById('signup-btn');
   const logoutBtn = document.getElementById('logout-btn');
   const userInfo = document.getElementById('user-info');
-  const userInput = document.getElementById('user-input');
-  const sendButton = document.getElementById('send-button');
-
   if (authToken && authUserName) {
     if (loginBtn) loginBtn.style.display = 'none';
     if (signupBtn) signupBtn.style.display = 'none';
@@ -249,23 +246,11 @@ function updateAuthUI() {
       userInfo.style.display = 'inline-block';
       userInfo.textContent = `${authUserName}님`;
     }
-
-    if (userInput) {
-      userInput.disabled = false;
-      userInput.placeholder = '운세에 대해 물어보세요...';
-    }
-    if (sendButton) sendButton.disabled = false;
   } else {
     if (loginBtn) loginBtn.style.display = 'inline-block';
     if (signupBtn) signupBtn.style.display = 'inline-block';
     if (logoutBtn) logoutBtn.style.display = 'none';
     if (userInfo) userInfo.style.display = 'none';
-
-    if (userInput) {
-      userInput.disabled = true;
-      userInput.placeholder = '로그인이 필요합니다';
-    }
-    if (sendButton) sendButton.disabled = true;
   }
 }
 
@@ -393,13 +378,9 @@ async function handleAuthSubmit(e) {
 }
 
 // ========== 메시지 전송 ==========
-async function sendMessage() {
-  const userInput = document.getElementById('user-input');
-  const sendButton = document.getElementById('send-button');
+async function sendMessage(message) {
   const chatMessages = document.getElementById('chat-messages');
   const typingIndicator = document.getElementById('typing-indicator');
-
-  const message = userInput.value.trim();
 
   if (!authToken) {
     addMessageToChat('ai', '로그인이 필요합니다.');
@@ -412,21 +393,11 @@ async function sendMessage() {
     return;
   }
 
+  message = (message || '').trim();
   if (message === '' || isProcessing) return;
 
-  // 한국어 검증
-  if (!/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(message)) {
-    addMessageToChat('ai', '이 챗봇은 한국어 전용입니다. 한국어로 입력해 주세요.');
-    userInput.value = '';
-    return;
-  }
-
   isProcessing = true;
-  userInput.disabled = true;
-  sendButton.disabled = true;
-
   addMessageToChat('user', message);
-  userInput.value = '';
 
   typingIndicator.style.display = 'block';
 
@@ -522,9 +493,6 @@ async function sendMessage() {
   } finally {
     typingIndicator.style.display = 'none';
     isProcessing = false;
-    userInput.disabled = false;
-    sendButton.disabled = false;
-    userInput.focus();
   }
 }
 
@@ -540,8 +508,6 @@ function initEventListeners() {
   const authBirthdateInput = document.getElementById('auth-birthdate');
   const authCancelBtn = document.getElementById('auth-cancel');
   const authMessage = document.getElementById('auth-message');
-  const sendButton = document.getElementById('send-button');
-  const userInput = document.getElementById('user-input');
   const chatHistoryItems = document.querySelectorAll('.chat-history li');
 
   const consentSection = document.getElementById('consent-section');
@@ -604,20 +570,6 @@ function initEventListeners() {
     authForm.addEventListener('submit', handleAuthSubmit);
   }
 
-  // 채팅 입력
-  if (sendButton) {
-    sendButton.addEventListener('click', sendMessage);
-  }
-
-  if (userInput) {
-    userInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-  }
-
   // 채팅 기록 클릭
   chatHistoryItems.forEach(item => {
     item.addEventListener('click', () => {
@@ -625,9 +577,7 @@ function initEventListeners() {
         addMessageToChat('ai', '로그인 후 이용하실 수 있습니다.');
         return;
       }
-      const text = item.textContent;
-      userInput.value = text;
-      userInput.focus();
+      sendMessage(item.textContent.trim());
     });
   });
 
