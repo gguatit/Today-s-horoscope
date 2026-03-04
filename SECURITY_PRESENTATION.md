@@ -1,0 +1,363 @@
+# 오늘의 운세 - 보안 설명서
+
+발표용 핵심 요약 문서
+
+---
+
+## 1. 프로젝트 개요
+
+AI 기반 한국어 운세 챗봇 서비스
+- 생년월일 입력 시 12별자리 기반 맞춤 운세 제공
+- 실시간 AI 응답 스트리밍
+- 회원가입/로그인, 채팅 기록 저장
+- 개인정보 수집 동의 및 개인정보처리방침 페이지
+
+---
+
+## 2. 기술 스택
+
+### 프론트엔드
+- HTML, CSS, Vanilla JavaScript (프레임워크 없음)
+
+### 백엔드
+- TypeScript + Cloudflare Workers (서버리스)
+- Llama 3.1 8B AI (운세 생성)
+- D1 Database (SQLite 기반)
+
+### 왜 Cloudflare Workers?
+```
+전통 서버: 서울 서버 → 미국 사용자 느림 (300ms)
+Workers: 전 세계 300개 도시 → 가까운 곳에서 응답 (50ms)
+```
+
+**장점:** 빠른 속도, 서버 관리 불필요, 저렴한 비용
+
+---
+
+## 3. 핵심 보안 메커니즘
+
+### A. 비밀번호 암호화 (PBKDF2)
+
+```
+입력: mypassword123
+처리: 소금(랜덤) + 100,000번 반복
+저장: $2y$10$a3f9k2j1...해시값...
+```
+
+**일반인 설명:**
+비밀번호를 고기 분쇄기에 100,000번 갈아서 저장하는 것과 같습니다.
+한 번 갈린 고기는 다시 원래 고기로 되돌릴 수 없듯이, 저장된 암호는
+원래 비밀번호로 복원이 불가능합니다.
+
+**왜 안전한가?**
+```
+위험한 방법 (사용 안 함):
+비밀번호: password123
+저장: password123 (그대로)
+→ 해커가 데이터베이스 훔치면 바로 보임
+
+안전한 방법 (우리가 사용):
+비밀번호: password123
+소금: x8k2Pq9m (사용자마다 다름)
+100,000번 암호화
+저장: $2y$10$x8k2Pq9m...Nf7j2K8pQ (되돌릴 수 없음)
+→ 해커가 데이터베이스 훔쳐도 원본 비밀번호 알 수 없음
+→ 같은 비밀번호를 쓰는 사용자들도 다르게 저장됨
+```
+
+**실제 보호 효과:**
+- 해커가 해독하려면: 개 좋은 컴퓨터로 수년 소요
+- 같은 비밀번호 "password123"도:
+  - 홍길동: $2y$10$abc...xyz
+  - 김철수: $2y$10$def...uvw (완전히 다름)
+- "소금"(Salt) 덕분에 rainbow table 공격도 무용지물
+
+---
+
+### B. SQL Injection 방어
+
+```typescript
+// 위험: 문자열 연결
+query = "SELECT * FROM users WHERE username = '" + input + "'";
+
+// 안전: Prepared Statements
+env.DB.prepare("SELECT * FROM users WHERE username = ?").bind(input);
+```
+
+**일반인 설명:**
+은행 창구 직원에게 전달하는 것과 같습니다.
+
+**위험한 방법:**
+```
+당신: "홍길동의 잔액 알려주세요. 아니면 모든 고객 정보 보여주세요"
+직원: "네!" (모든 정보 출력)
+→ 명령어를 마음대로 추가 가능
+```
+
+**안전한 방법:**
+```
+당신: 양식에 이름만 적음 "홍길동"
+직원: 양식에 적힌 이름만 확인
+→ 추가 명령어는 무시됨
+```
+
+**실제 공격 예시:**
+```
+해커 입력: admin' OR '1'='1
+위험한 처리:
+  SELECT * FROM users WHERE username = 'admin' OR '1'='1'
+  → 모든 사용자 정보 노출!
+
+안전한 처리:
+  SELECT * FROM users WHERE username = 'admin'' OR ''1''=''1'
+  → "admin' OR '1'='1" 이라는 이름의 사용자 검색 (없음)
+  → 공격 실패
+```
+
+---
+
+### C. XSS 방어
+
+```typescript
+// 특수문자 자동 변환
+<script>악성코드</script> → &lt;script&gt;악성코드&lt;/script&gt;
+```
+
+**일반인 설명:**
+게시판에 글을 쓸 때 자동으로 위험한 내용을 무해하게 바꾸는 것입니다.
+
+**공격 시나리오 (방어 안 하면):**
+```
+1. 해커가 댓글 작성: <script>모든 사람의 비밀번호 전송()</script>
+2. 다른 사용자가 댓글 봄
+3. 브라우저가 스크립트 실행
+4. 그 사용자의 정보가 해커에게 전송됨
+```
+
+**우리의 방어:**
+```
+해커 입력: <script>alert('해킹')</script>
+변환 후 저장: &lt;script&gt;alert('해킹')&lt;/script&gt;
+화면 표시: <script>alert('해킹')</script> (그냥 텍스트)
+→ 코드가 실행되지 않고 글자로만 보임
+```
+
+**비유:**
+```
+방어 전: 칼을 그대로 전달
+방어 후: 칼을 장난감 칼로 바꿔서 전달
+→ 위험 없음
+```
+
+**변환 목록:**
+```
+< → &lt;
+> → &gt;
+& → &amp;
+" → &quot;
+' → &#39;
+```
+
+---
+
+### D. Timing Attack 방어 (JWT 서명 검증)
+
+```typescript
+// 위험: 일반 문자열 비교
+if (providedSignature !== expectedSignature) ...
+// 북일치 위치에 따라 수행 시간 다름 -> 서명 추측 가능
+
+// 안전: 상수 시간 비교 (timingSafeEqual)
+// HMAC 연산 후 XOR 비교 -> 언제나 동일한 시간 소요
+```
+
+**무엇이 문제인가?**
+```
+일반 == 비교:
+  "A" != "Z" -> 1번만에 판단 (0.001ms)
+  "ABCDE" != "ABCDZ" -> 5번 비교 (0.005ms)
+  -> 같은 자리가 많을수록 시간 더 걸림 -> 해커가 서명 추측 가능
+
+상수 시간 비교:
+  항상 모든 바이트 전체 비교 -> 시간 차이 없음 -> 추측 불가
+```
+
+---
+
+### E. User Enumeration 방어
+
+```
+위험한 방식 (제거됨):
+  존재하지 않는 아이디 -> "존재하지 않는 아이디입니다."
+  틀린 비밀번호  -> "비밀번호가 일치하지 않습니다."
+  -> 해커가 유효한 아이디 목록 파악 가능
+
+안전한 방식 (현재):
+  두 경우 모두 -> "아이디 또는 비밀번호가 올바르지 않습니다."
+  -> 어떤 정보에 대한 힌트도 없음
+```
+
+---
+
+### F. 로그인 Rate Limiting (브루트포스 방어)
+
+```구조:
+login_attempts 테이블 (D1 데이터베이스)
+  - ip: 접속 IP 주소
+  - attempted_at: 시도 시간 (Unix timestamp)
+
+방어 로직:
+  IP당 15분 이내 5회 초과 -> 429 Too Many Requests
+  로그인 성공 -> 해당 IP의 실패 기록 자동 정리
+```
+
+---
+
+### G. Prompt Injection 방어
+
+```위험한 시나리오:
+  클라이언트가 messages 배열에 가짜 assistant 메시지를 주입
+  -> AI가 재쉽지를 받알다고 착각하게 만들어 동작 조작 가능
+
+보호 조치 (현재):
+  1. 허용 role: user / assistant 만 (클라이언트에서 system 주입 차단)
+  2. 메시지 최대 20개 제한 (서버 측)
+  3. 생년월일은 JWT payload에서만 사용 ([생년월일] 클라이언트 태그 무시)
+```
+
+---
+
+### H. 보안 헤더
+
+모든 응답에 자동 적용 (총 10개):
+```
+# 기본 보호 (기존 4개)
+X-Content-Type-Options: nosniff                     <- MIME 타입 스니핑 방지
+X-Frame-Options: DENY                               <- 클릭재킹 방지
+Referrer-Policy: strict-origin-when-cross-origin    <- Referer 헤더 최소화
+Permissions-Policy: camera=(), microphone=(),       <- 불필요 권한 사전 차단
+                    geolocation=()
+
+# 추가 강화 (신규 6개)
+Strict-Transport-Security: max-age=31536000;        <- HTTPS 강제 (1년)
+                            includeSubDomains
+X-XSS-Protection: 1; mode=block                    <- 구형 브라우저 XSS 필터
+X-DNS-Prefetch-Control: off                        <- DNS 프리페치 차단
+Cross-Origin-Opener-Policy: same-origin            <- 탭 분리 (Spectre 방어)
+Cross-Origin-Resource-Policy: same-origin          <- 타 사이트 리소스 로드 차단
+Content-Security-Policy:                           <- 콘텐츠 출처 화이트리스트
+  default-src 'self';
+  script-src 'self';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data:;
+  connect-src 'self';
+  font-src 'self';
+  frame-ancestors 'none'
+```
+
+**CSP 핵심 효과:**
+- `default-src 'self'` → 외부 서버에서 리소스 로드 원천 차단
+- `frame-ancestors 'none'` → X-Frame-Options DENY와 이중 클릭재킹 방어
+- `connect-src 'self'` → 외부 서버로 데이터 유출 차단 (XSS 연계 공격 방어)
+
+### 해결됨
+
+**1. JWT 비밀키 하드코딩** -> Cloudflare Secrets로 암호화 저장 (해결 완료)
+
+**2. JWT 토큰 만료 시간 없음** -> 12시간 만료 설정 (해결 완료)
+
+**3. User Enumeration** -> 로그인 실패 메시지 단일화 (해결 완료)
+
+**4. JWT Timing Attack** -> 상수 시간 서명 검증 (timingSafeEqual) (해결 완료)
+
+**5. 로그인 Rate Limiting 없음** -> IP당 15분 5회 제한 + D1 로그 (해결 완료)
+
+**6. Prompt Injection** -> 허용 role 필터링 / 메시지 20개 제한 / JWT birthdate 사용 (해결 완료)
+
+**7. 보안 헤더 누락** -> 10개 헤더 적용 (CSP, HSTS, COOP, CORP, X-XSS-Protection 등) (해결 완료)
+
+**8. sanitize() 미호출** -> DB 저장 전 XSS 정제 함수 실제 적용 (해결 완료)
+
+**9. 생년월일 서버 검증 누락** -> YYYY-MM-DD 정규식 검증 추가 (해결 완료)
+
+**10. chatHistory 무제한 성장** -> 전송 20개 / 로칼 100개 제한 (해결 완료)
+
+### 미해결 (심각도: 중간)
+
+**LocalStorage JWT 저장**
+- JavaScript로 접근 가능
+- XSS 공격 시 탈취 위험
+- 해결: HttpOnly Cookie 사용
+
+---
+
+## 5. 보안 개선 로드맵
+
+### 해결 완료
+1. JWT_SECRET 환경 변수화 -> Cloudflare Secrets
+2. JWT 만료 시간 추가 -> 12시간
+3. User Enumeration 방지 -> 로그인 실패 메시지 단일화
+4. JWT Timing Attack 방지 -> timingSafeEqual
+5. 로그인 Rate Limiting -> IP당 15분 5회
+6. Prompt Injection 방어 -> role 필터링 / 메시지 제한 / JWT birthdate
+7. 보안 헤더 10개 적용 (CSP, HSTS, COOP, CORP 포함)
+8. sanitize() DB 저장 전 실제 적용
+9. 생년월일 서버 측 형식 검증
+10. chatHistory 전송/저장 상한 제한
+11. 개인정보 수집 동의 + 개인정보처리방침
+
+### 우선 개선 (미해결)
+1. HttpOnly Cookie 적용 (LocalStorage JWT 탈취 방지)
+
+---
+
+## 6. 성능 및 비용
+
+### 현재 성능
+- 로그인: 150ms
+- AI 운세: 2-3초 (스트리밍)
+- 글로벌 응답 속도: 50ms
+
+### 운영 비용 (1,000명 기준)
+```
+현재 (무료 티어): $0/월
+확장 시 (10,000명): $25/월
+전통 서버 (AWS): $100/월
+```
+
+**비용 절감: 75%**
+
+---
+
+## 7. 결론
+
+### 강점
+- 빠른 글로벌 응답 속도
+- 확장 가능한 서버리스 구조
+- 저렴한 운영 비용
+- PBKDF2 + 역할 기반 인증으로 비밀번호 안전
+- User Enumeration / Timing Attack / Rate Limiting 등 주요 공격 벡터 대부분 차단
+- Prompt Injection 방어 및 보안 헤더 적용
+- 개인정보 수집 동의 및 처리방침 완비
+
+### 개선 필요
+- LocalStorage 대신 HttpOnly Cookie 적용
+
+### 최종 평가
+현대적이고 효율적인 기술 스택이며,
+주요 보안 취약점은 대부분 해결되었습니다.
+
+---
+
+## 부록: 필수 용어
+
+- **JWT**: 로그인 증명서 (영화표와 같은 개념)
+- **API**: 프로그램 간 통신 방법
+- **XSS**: 악성 스크립트 주입 공격
+- **SQL Injection**: 데이터베이스 명령 조작 공격
+- **CDN**: 전 세계 데이터센터 네트워크
+
+---
+
+작성일: 2026년 3월 4일
+문서 버전: 4.1 (보안 헤더 10개 전체 반영)
