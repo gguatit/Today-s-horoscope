@@ -27,8 +27,5 @@
       "database_id": "94ab3b09-aa89-445c-b2bf-1929854119d1"
     }
   ],
-  "vars": {
-    "JWT_SECRET": "9K2mP8vX4nQ7wR5tY6uI0oP3aS1dF8gH2jK9lZ4xC7vB6nM5qW3eR1tY8uI2oP0aS4dF7gH5jK3lZ9xC6vB8nM2qW5eR4tY1uI7oP6aS3dF0gH9jK8lZ5xC2vB4nM7qW1eR3"
-  },
   "upload_source_maps": true
 }
