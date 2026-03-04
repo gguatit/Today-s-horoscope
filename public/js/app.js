@@ -363,6 +363,10 @@ async function handleAuthSubmit(e) {
         authMessage.textContent = '회원가입 성공! 로그인해주세요.';
         setTimeout(() => {
           authTitle.textContent = '로그인';
+          authUserIdInput.value = '';
+          authPasswordInput.value = '';
+          authUserNameInput.value = '';
+          authBirthdateInput.value = '';
           authUserNameInput.style.display = 'none';
           authUserNameInput.required = false;
           authBirthdateInput.style.display = 'none';
@@ -370,7 +374,6 @@ async function handleAuthSubmit(e) {
           if (consentSec) consentSec.style.display = 'none';
           authForm.dataset.mode = 'login';
           authMessage.textContent = '';
-          authPasswordInput.value = '';
         }, 1500);
       }
     } else {
@@ -516,6 +519,8 @@ function initEventListeners() {
   const authModal = document.getElementById('auth-modal');
   const authTitle = document.getElementById('auth-title');
   const authForm = document.getElementById('auth-form');
+  const authUserIdInput = document.getElementById('auth-userid');
+  const authPasswordInput = document.getElementById('auth-password');
   const authUserNameInput = document.getElementById('auth-username');
   const authBirthdateInput = document.getElementById('auth-birthdate');
   const authCancelBtn = document.getElementById('auth-cancel');
@@ -530,6 +535,10 @@ function initEventListeners() {
       e.preventDefault();
       authModal.style.display = 'flex';
       authTitle.textContent = '로그인';
+      authUserIdInput.value = '';
+      authPasswordInput.value = '';
+      authUserNameInput.value = '';
+      authBirthdateInput.value = '';
       authUserNameInput.style.display = 'none';
       authUserNameInput.required = false;
       authBirthdateInput.style.display = 'none';
@@ -546,6 +555,10 @@ function initEventListeners() {
       e.preventDefault();
       authModal.style.display = 'flex';
       authTitle.textContent = '회원가입';
+      authUserIdInput.value = '';
+      authPasswordInput.value = '';
+      authUserNameInput.value = '';
+      authBirthdateInput.value = '';
       authUserNameInput.style.display = 'block';
       authUserNameInput.required = true;
       authBirthdateInput.style.display = 'block';
