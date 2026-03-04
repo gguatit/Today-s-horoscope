@@ -110,8 +110,8 @@ async function handleAuthRequest(request: Request, env: Env): Promise<Response> 
 
     if (url.pathname === "/api/auth/register") {
       const { userId, userName, password, birthdate, consents } = body;
-      if (!userId || !userName || !password) {
-        return new Response("아이디, 이름, 비밀번호는 필수입니다.", { status: 400 });
+      if (!userId || !userName || !password || !birthdate) {
+        return new Response("아이디, 이름, 비밀번호, 생년월일은 필수입니다.", { status: 400 });
       }
 
       // 개인정보 수집 동의 검증

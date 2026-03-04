@@ -278,8 +278,15 @@ async function handleAuthSubmit(e) {
     birthdate = formatBirthdate(birthdateRaw);
   }
 
-  // 회원가입일 경우 동의 체크 확인
+  // 회원가입일 경우 유효성 검사
   if (mode === 'signup') {
+    // 생년월일 필수 검증
+    if (!birthdateRaw || birthdateRaw.length !== 8 || !birthdate) {
+      authMessage.style.color = 'red';
+      authMessage.textContent = '생년월일 8자리를 올바르게 입력해주세요. (예: 19900315)';
+      return;
+    }
+    // 개인정보 동의 검증
     const consentItems = document.querySelectorAll('.consent-item');
     const allChecked = Array.from(consentItems).every(cb => cb.checked);
     if (!allChecked) {
@@ -542,7 +549,7 @@ function initEventListeners() {
       authUserNameInput.style.display = 'block';
       authUserNameInput.required = true;
       authBirthdateInput.style.display = 'block';
-      authBirthdateInput.required = false;
+      authBirthdateInput.required = true;
       if (consentSection) {
         consentSection.style.display = 'block';
         // 체크박스 초기화
