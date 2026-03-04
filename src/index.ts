@@ -314,7 +314,7 @@ async function timingSafeEqual(a: string, b: string): Promise<boolean> {
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"]
-  );
+  ) as CryptoKey;
   const [aHmac, bHmac] = await Promise.all([
     crypto.subtle.sign("HMAC", secretKey, encoder.encode(a)),
     crypto.subtle.sign("HMAC", secretKey, encoder.encode(b)),
