@@ -41,22 +41,19 @@ export default {
     ctx: ExecutionContext,
   ): Promise<Response> {
     const response = await handleRequest(request, env, ctx);
-    const headers = new Headers(response.headers);
-    headers.set("X-Content-Type-Options", "nosniff");
-    headers.set("X-Frame-Options", "DENY");
-    headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-    headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-    headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-    headers.set("X-XSS-Protection", "1; mode=block");
-    headers.set("X-DNS-Prefetch-Control", "off");
-    headers.set("Cross-Origin-Opener-Policy", "same-origin");
-    headers.set("Cross-Origin-Resource-Policy", "same-origin");
-    headers.set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'");
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers,
-    });
+    const newResponse = new Response(response.body, response);
+    newResponse.headers.set("X-Content-Type-Options", "nosniff");
+    newResponse.headers.set("X-Frame-Options", "DENY");
+    newResponse.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    newResponse.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    newResponse.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    newResponse.headers.set("X-XSS-Protection", "1; mode=block");
+    newResponse.headers.set("X-DNS-Prefetch-Control", "off");
+    newResponse.headers.set("Cross-Origin-Embedder-Policy", "require-corp");
+    newResponse.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+    newResponse.headers.set("Cross-Origin-Resource-Policy", "same-origin");
+    newResponse.headers.set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'");
+    return newResponse;
   },
 } satisfies ExportedHandler<Env>;
 
