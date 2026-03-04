@@ -360,7 +360,11 @@ async function handleAuthSubmit(e) {
         }
       } else {
         authMessage.style.color = 'green';
-        authMessage.textContent = '회원가입 성공! 로그인해주세요.';
+        authMessage.textContent = '회원가입 성공!';
+        setTimeout(() => {
+          authMessage.style.color = '#9DB2F5';
+          authMessage.textContent = '로그인 화면으로 전환 중입니다...';
+        }, 800);
         setTimeout(() => {
           authTitle.textContent = '로그인';
           authUserIdInput.value = '';
@@ -374,7 +378,7 @@ async function handleAuthSubmit(e) {
           if (consentSec) consentSec.style.display = 'none';
           authForm.dataset.mode = 'login';
           authMessage.textContent = '';
-        }, 1500);
+        }, 1800);
       }
     } else {
       const errText = await res.text();
