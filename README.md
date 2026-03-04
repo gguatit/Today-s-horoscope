@@ -70,7 +70,7 @@ graph TB
 
 - **Llama 3.1 8B Instruct FP8** 모델 기반 운세 생성
 - 생년월일과 목표 날짜를 기반으로 한 맞춤형 분석
-- **12별자리(서양 점성술)** 완전 통합 ✅
+- **12별자리(서양 점성술)** 완전 통합
   - 자동 별자리 계산 및 UI 표시
   - 별자리별 세부 특성 (열정, 안정, 소통, 감성, 자신감, 세심함, 균형, 직관, 모험, 목표, 독창성, 상상력) AI 운세에 자연스럽게 통합
   - 12개 별자리(양자리~물고기자리) 각각의 강점과 주의사항 맞춤 반영
@@ -89,24 +89,32 @@ graph TB
 
 ### User Management
 
-- JWT 기반 무상태 인증 시스템
+- JWT 기반 무상태 인증 시스템 (HS256, 만료 12시간)
 - 회원가입/로그인 기능
 - 사용자별 생년월일 정보 자동 연동
 - 세션 유지 및 자동 로그인
-- **회원가입 시 개인정보 수집 동의** (5개 항목 + 전체 동의 체크박스)
-  - 서버 측에서도 모든 동의 여부를 검증
+- **회원가입 시 개인정보 수집 동의** (5개 항목 + 전체 동의 체크박스, 서버 측 검증)
 - **개인정보처리방침** 페이지 (`/privacy.html`)
+
+### Quick Presets (채팅 바로가기)
+
+오른쪽 사이드바에서 클릭 한 번으로 아래 주제를 바로 질문할 수 있습니다.
+
+- 오늘의 운세
+- 연애운 질문
+- 금전운 상담
+- 이번 주 운세
+- 건강운 확인
+- 학업/시험운 질문
+- 직장/취업운 상담
+- 인간관계 운세
 
 ### User Experience
 
 - 모바일 최적화 UI (숫자 키패드 입력 지원)
-- 날짜 증감 버튼으로 편리한 날짜 조정
-- '오늘' 버튼으로 빠른 날짜 초기화
-- **12별자리 자동 표시** ✅ (생년월일 설정 시 채팅창에 실시간 표시)
-  - 별자리 아이콘 + 한국어명 + 영어명 + 날짜 범위
-  - 실시간 계산 및 업데이트
+- **12별자리 자동 표시** (생년월일 설정 시 사이드바에 실시간 표시)
+  - 한국어명 + 영어명 + 날짜 범위 + 별자리 특성 설명
 - LocalStorage 기반 채팅 기록 및 설정 유지
-- 비밀번호 표시/숨김 토글
 - 반응형 디자인 (모바일/태블릿/데스크톱)
 
 ## Tech Stack
@@ -145,23 +153,26 @@ graph TB
 ```typescript
 // JWT payload structure
 {
-  sub: number,        // User ID
-  username: string,   // Username
-  birthdate: string   // User birthdate (YYYYMMDD)
+  sub: number,        // User DB id
+  userId: string,     // User ID (TEXT)
+  userName: string,   // Display name
+  birthdate: string   // YYYY-MM-DD
 }
 ```
 
-**JWT Secret Configuration**
-- 개발 환경: `wrangler.jsonc`의 `vars.JWT_SECRET` 사용
-- 프로덕션 환경: Wrangler Secrets로 안전하게 관리 (암호화 저장)
+**JWT Secret 관리**
+- 로컬 개발: `.dev.vars` 파일에 `JWT_SECRET` 설정 (`.gitignore`에 등록되어 git에 커밋되지 않음)
+- 프로덕션: Wrangler Secrets에 암호화 저장 (`wrangler.jsonc` 평문 노출 없음)
 
 ```bash
-# 프로덕션 환경에 JWT_SECRET 설정 (암호화되어 저장됨)
+# 프로덕션 환경에 JWT_SECRET 등록
 npx wrangler secret put JWT_SECRET
-# 프롬프트에서 강력한 시크릿 키 입력 (최소 64자 권장)
 ```
 
-> **보안 권장사항**: 프로덕션 환경에서는 반드시 `wrangler secret put` 명령어로 강력한 시크릿을 설정하세요. `wrangler.jsonc`의 vars에 키를 직접 넣으면 GitHub에 노출됩니다.
+```ini
+# .dev.vars (로컬 전용, git 제외)
+JWT_SECRET=your_secret_here
+```
 
 ### Password Security
 
@@ -215,22 +226,14 @@ function sanitize(str: string): string {
 
 ### Input Validation
 
-**User ID Requirements**
-- 형식: 영문/숫자 조합
-- 길이: 4-8자
-- 정규식: `^[a-zA-Z0-9]{4,8}$`
-
-**User Name Requirements**
-- 길이: 2-4자
-- 모든 문자 허용 (한글, 영문 등)
-
-**Password Requirements**
-- 길이: 8-20자
-- 모든 문자 허용
+| 항목 | 규칙 |
+|---|---|
+| User ID | 영문/숫자, 4-8자 (`^[a-zA-Z0-9]{4,8}$`) |
+| User Name | 2-4자 |
+| Password | 8-20자 |
+| Birthdate | YYYYMMDD (8자리 숫자) |
 
 ## API Reference
-
-
 
 ### Authentication Endpoints
 
@@ -242,9 +245,16 @@ function sanitize(str: string): string {
 ```json
 {
   "userId": "string (4-8 chars, alphanumeric)",
-  "userName": "string (2-4 chars, required)",
+  "userName": "string (2-4 chars)",
   "password": "string (8-20 chars)",
-  "birthdate": "string (YYYYMMDD, optional)"
+  "birthdate": "string (YYYYMMDD, optional)",
+  "consents": {
+    "consent_name": true,
+    "consent_birthdate": true,
+    "consent_ip": true,
+    "consent_chat": true,
+    "consent_usage": true
+  }
 }
 ```
 
@@ -256,9 +266,9 @@ function sanitize(str: string): string {
 ```
 
 **Error Codes**
-- `400`: Invalid input format
-- `409`: User ID already exists
-- `500`: Server error
+- `400`: 입력값 형식 오류 또는 동의 미완료
+- `409`: 이미 사용 중인 아이디
+- `500`: 서버 오류
 
 #### POST `/api/auth/login`
 
@@ -283,40 +293,62 @@ function sanitize(str: string): string {
 ```
 
 **Error Codes**
-- `400`: Missing credentials
-- `401`: Invalid user ID or password
-- `500`: Server error
+- `400`: 필드 누락
+- `401`: 아이디 또는 비밀번호 불일치
+- `500`: 서버 오류
 
-### Chat Endpoint
+### Chat Endpoints
 
 #### POST `/api/chat`
 
-AI 채팅 요청 (SSE 스트리밍)
+AI 운세 채팅 (SSE 스트리밍, 인증 필요)
+
+**Headers**
+```
+Authorization: Bearer <JWT>
+```
 
 **Request Body**
 ```json
 {
   "messages": [
-    {
-      "role": "user",
-      "content": "string"
-    }
+    { "role": "user", "content": "string" }
   ]
 }
 ```
 
 **Response**
 - Content-Type: `text/event-stream`
-- Streaming SSE format with AI-generated response
+- SSE 포맷: `data: {"response": "..."}` 스트리밍
 
 **Error Codes**
+- `401`: 인증 필요 또는 토큰 만료
 - `405`: Method not allowed
-- `500`: AI processing error
+- `500`: AI 처리 오류
+
+#### POST `/api/chat/save-response`
+
+AI 응답 DB 저장 (인증 필요)
+
+**Headers**
+```
+Authorization: Bearer <JWT>
+```
+
+**Request Body**
+```json
+{ "aiResponse": "string" }
+```
+
+**Response**
+```json
+{ "success": true }
+```
 
 ## Database Schema
 
 ```sql
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id TEXT NOT NULL UNIQUE,
   user_name TEXT NOT NULL,
@@ -328,6 +360,18 @@ CREATE TABLE users (
   location TEXT,
   total_requests INTEGER DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS chat_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  user_message TEXT NOT NULL,
+  ai_response TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_history_user_id ON chat_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_history_created_at ON chat_history(created_at);
 ```
 
 ## License
@@ -345,13 +389,15 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 **프로젝트 현황:**
 - [x] 핵심 운세 챗봇 기능 완성
-- [x] 12별자리 통합 완료 (계산, UI 표시, AI 특성 반영)
+- [x] 12별자리 통합 (계산, UI 표시, AI 특성 반영)
 - [x] JWT 인증 및 PBKDF2 보안
+- [x] JWT_SECRET Wrangler Secrets 관리 (wrangler.jsonc 평문 노출 제거)
 - [x] SSE 실시간 스트리밍
 - [x] 모바일 최적화 UI
 - [x] 개인정보 수집 동의 (회원가입 시 서버 검증)
 - [x] 개인정보처리방침 페이지
 - [x] AI 응답 DB 저장
+- [x] 채팅 바로가기 프리셋 8종
 - [ ] 자동화 테스트 (향후 추가 예정)
 
 **Live Demo**: [https://kalpha.c01.kr](https://kalpha.c01.kr)
