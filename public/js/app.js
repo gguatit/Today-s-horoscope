@@ -376,7 +376,9 @@ async function handleAuthSubmit(e) {
           authBirthdateInput.value = '';
           authUserNameInput.style.display = 'none';
           authUserNameInput.required = false;
+          authUserNameInput.removeAttribute('required');
           authBirthdateInput.style.display = 'none';
+          authBirthdateInput.removeAttribute('required');
           const consentSec = document.getElementById('consent-section');
           if (consentSec) consentSec.style.display = 'none';
           authForm.dataset.mode = 'login';
@@ -548,8 +550,10 @@ function initEventListeners() {
       authBirthdateInput.value = '';
       authUserNameInput.style.display = 'none';
       authUserNameInput.required = false;
+      authUserNameInput.removeAttribute('required');
       authBirthdateInput.style.display = 'none';
       authBirthdateInput.required = false;
+      authBirthdateInput.removeAttribute('required');
       if (consentSection) consentSection.style.display = 'none';
       authForm.dataset.mode = 'login';
       authMessage.textContent = '';
@@ -568,8 +572,10 @@ function initEventListeners() {
       authBirthdateInput.value = '';
       authUserNameInput.style.display = 'block';
       authUserNameInput.required = true;
+      authUserNameInput.setAttribute('required', 'true');
       authBirthdateInput.style.display = 'block';
       authBirthdateInput.required = true;
+      authBirthdateInput.setAttribute('required', 'true');
       if (consentSection) {
         consentSection.style.display = 'block';
         // 체크박스 초기화
