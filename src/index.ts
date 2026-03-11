@@ -169,23 +169,24 @@ async function handleAuthRequest(request: Request, env: Env): Promise<Response> 
         return new Response("아이디와 비밀번호를 입력해주세요.", { status: 400 });
       }
 
-      // Rate limiting: IP당 15분 이내 5회 초과 시 차단 (테스트를 위해 임시 비활성화)
+      // Rate limiting: 동일 IP & 동일 ID 계정당 15분 이내 5회 초과 시 차단
       const clientIP = request.headers.get("CF-Connecting-IP") || "unknown";
+      const loginAttemptKey = `login_${userId}_${clientIP}`;
       const windowStart = Math.floor(Date.now() / 1000) - 15 * 60;
-      /*
+      
       const attempts = await env.DB.prepare(
         "SELECT COUNT(*) as count FROM login_attempts WHERE ip = ? AND attempted_at > ?"
-      ).bind(clientIP, windowStart).first<{ count: number }>();
+      ).bind(loginAttemptKey, windowStart).first<{ count: number }>();
+      
       if (attempts && attempts.count >= 5) {
         return new Response("로그인 시도 횟수를 초과했습니다. 15분 후 다시 시도해주세요.", { status: 429 });
       }
-      */
 
       // 사용자 정보 조회
       const user = await env.DB.prepare("SELECT * FROM users WHERE user_id = ?").bind(userId).first<any>();
       if (!user) {
         // 실패 기록 (사용자 존재 여부 노출 방지: 동일 메시지 반환)
-        await env.DB.prepare("INSERT INTO login_attempts (ip, attempted_at) VALUES (?, ?)").bind(clientIP, Math.floor(Date.now() / 1000)).run();
+        await env.DB.prepare("INSERT INTO login_attempts (ip, attempted_at) VALUES (?, ?)").bind(loginAttemptKey, Math.floor(Date.now() / 1000)).run();
         return new Response("아이디 또는 비밀번호가 올바르지 않습니다.", { status: 401 });
       }
 
@@ -193,12 +194,12 @@ async function handleAuthRequest(request: Request, env: Env): Promise<Response> 
       const hash = await hashPassword(password, user.salt);
       if (!await timingSafeEqual(hash, user.password_hash)) {
         // 실패 기록
-        await env.DB.prepare("INSERT INTO login_attempts (ip, attempted_at) VALUES (?, ?)").bind(clientIP, Math.floor(Date.now() / 1000)).run();
+        await env.DB.prepare("INSERT INTO login_attempts (ip, attempted_at) VALUES (?, ?)").bind(loginAttemptKey, Math.floor(Date.now() / 1000)).run();
         return new Response("아이디 또는 비밀번호가 올바르지 않습니다.", { status: 401 });
       }
 
-      // 로그인 성공 시 해당 IP의 실패 기록 정리
-      await env.DB.prepare("DELETE FROM login_attempts WHERE ip = ? OR attempted_at < ?").bind(clientIP, windowStart).run();
+      // 로그인 성공 시 해당 IP&ID의 실패 기록 정리
+      await env.DB.prepare("DELETE FROM login_attempts WHERE ip = ? OR attempted_at < ?").bind(loginAttemptKey, windowStart).run();
 
       try {
         // 마지막 로그인 시간 및 위치 업데이트
