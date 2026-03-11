@@ -234,6 +234,68 @@ async function handleAuthRequest(request: Request, env: Env): Promise<Response> 
       }
     }
 
+    if (url.pathname === "/api/auth/delete") {
+      const authHeader = request.headers.get("Authorization");
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return new Response("로그인이 필요합니다.", { status: 401 });
+      }
+
+      const token = authHeader.substring(7);
+      const payload = await verifyJWT(token, env);
+      
+      if (!payload) {
+        return new Response("유효하지 않거나 만료된 세션입니다. 다시 로그인해주세요.", { status: 401 });
+      }
+
+      // [보안] 최근 로그인(재인증) 확인: iat 기준으로 30분 초과 시 재로그인 요구
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (payload.iat && (currentTime - payload.iat > 30 * 60)) {
+         return new Response("보안을 위해 다시 로그인한 후 회원탈퇴를 진행해주세요.", { status: 403 });
+      }
+
+      const { password } = body;
+      if (!password) {
+        return new Response("본인 확인을 위해 비밀번호를 입력해주세요.", { status: 400 });
+      }
+
+      const userId = payload.userId;
+      
+      // [보안] 속도 제한 (Rate Limiting) - 비밀번호 무차별 대입 방지
+      const clientIP = request.headers.get("CF-Connecting-IP") || "unknown";
+      const windowStart = Math.floor(Date.now() / 1000) - 15 * 60;
+      const attempts = await env.DB.prepare(
+        "SELECT COUNT(*) as count FROM login_attempts WHERE ip = ? AND attempted_at > ?"
+      ).bind(`delete_${userId}_${clientIP}`, windowStart).first<{ count: number }>();
+      
+      if (attempts && attempts.count >= 5) {
+        return new Response("비밀번호 확인 시도 횟수를 초과했습니다. 15분 후 다시 시도해주세요.", { status: 429 });
+      }
+
+      // 사용자 정보 조회
+      const user = await env.DB.prepare("SELECT * FROM users WHERE user_id = ?").bind(userId).first<any>();
+      if (!user) {
+        return new Response("사용자 정보를 찾을 수 없습니다.", { status: 404 });
+      }
+
+      // [보안] 비밀번호 재확인 (상수 시간 비교)
+      const hash = await hashPassword(password, user.salt);
+      if (!await timingSafeEqual(hash, user.password_hash)) {
+        // 실패 기록
+        await env.DB.prepare("INSERT INTO login_attempts (ip, attempted_at) VALUES (?, ?)").bind(`delete_${userId}_${clientIP}`, Math.floor(Date.now() / 1000)).run();
+        return new Response("비밀번호가 올바르지 않습니다.", { status: 401 });
+      }
+
+      // 비밀번호가 일치하면 실패 기록 정리 및 레코드 테이블에서 삭제
+      await env.DB.prepare("DELETE FROM login_attempts WHERE ip = ?").bind(`delete_${userId}_${clientIP}`).run();
+      
+      // 사용자 삭제 (ON DELETE CASCADE로 chat_history도 함께 삭제됨)
+      await env.DB.prepare("DELETE FROM users WHERE id = ?").bind(user.id).run();
+
+      return new Response(JSON.stringify({ success: true, message: "회원탈퇴가 완료되었습니다." }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
     return new Response("Not found", { status: 404 });
   } catch (e) {
     console.error(e);

@@ -237,11 +237,13 @@ function updateAuthUI() {
   const loginBtn = document.getElementById('login-btn');
   const signupBtn = document.getElementById('signup-btn');
   const logoutBtn = document.getElementById('logout-btn');
+  const deleteAccountBtn = document.getElementById('delete-account-btn');
   const userInfo = document.getElementById('user-info');
   if (authToken && authUserName) {
     if (loginBtn) loginBtn.style.display = 'none';
     if (signupBtn) signupBtn.style.display = 'none';
     if (logoutBtn) logoutBtn.style.display = 'inline-block';
+    if (deleteAccountBtn) deleteAccountBtn.style.display = 'inline-block';
     if (userInfo) {
       userInfo.style.display = 'inline-block';
       userInfo.textContent = `${authUserName}님`;
@@ -250,6 +252,7 @@ function updateAuthUI() {
     if (loginBtn) loginBtn.style.display = 'inline-block';
     if (signupBtn) signupBtn.style.display = 'inline-block';
     if (logoutBtn) logoutBtn.style.display = 'none';
+    if (deleteAccountBtn) deleteAccountBtn.style.display = 'none';
     if (userInfo) userInfo.style.display = 'none';
   }
 }
@@ -609,6 +612,80 @@ function initEventListeners() {
       sendMessage(item.textContent.trim());
     });
   });
+
+  // 회원탈퇴 관련 요소
+  const deleteAccountBtn = document.getElementById('delete-account-btn');
+  const deleteAuthModal = document.getElementById('delete-auth-modal');
+  const deleteAuthForm = document.getElementById('delete-auth-form');
+  const deleteAuthPassword = document.getElementById('delete-auth-password');
+  const deleteAuthCancel = document.getElementById('delete-auth-cancel');
+  const deleteAuthMessage = document.getElementById('delete-auth-message');
+
+  // 회원탈퇴 버튼 (모달 열기)
+  if (deleteAccountBtn && deleteAuthModal) {
+    deleteAccountBtn.addEventListener('click', () => {
+      deleteAuthModal.style.display = 'flex';
+      deleteAuthPassword.value = '';
+      if (deleteAuthMessage) deleteAuthMessage.textContent = '';
+    });
+  }
+
+  // 회원탈퇴 모달 취소
+  if (deleteAuthCancel && deleteAuthModal) {
+    deleteAuthCancel.addEventListener('click', () => {
+      deleteAuthModal.style.display = 'none';
+    });
+  }
+
+  // 회원탈퇴 폼 제출
+  if (deleteAuthForm) {
+    deleteAuthForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = deleteAuthPassword.value;
+
+      if (!password) {
+        if (deleteAuthMessage) {
+          deleteAuthMessage.style.color = 'red';
+          deleteAuthMessage.textContent = '비밀번호를 입력해주세요.';
+        }
+        return;
+      }
+
+      const submitBtn = deleteAuthForm.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+
+      try {
+        const res = await fetch('/api/auth/delete', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ password })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          alert(data.message || '회원탈퇴가 완료되었습니다.');
+          deleteAuthModal.style.display = 'none';
+          performLogout('회원탈퇴가 정상적으로 처리되었습니다. 서비스 이용에 감사드립니다.');
+        } else {
+          const errText = await res.text();
+          if (deleteAuthMessage) {
+            deleteAuthMessage.style.color = 'red';
+            deleteAuthMessage.textContent = errText;
+          }
+        }
+      } catch (err) {
+        if (deleteAuthMessage) {
+          deleteAuthMessage.style.color = 'red';
+          deleteAuthMessage.textContent = '서버 통신 오류';
+        }
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    });
+  }
 
   // 개인정보 동의 체크박스 로직
   initConsentListeners();

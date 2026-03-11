@@ -17,6 +17,7 @@
                 <a id="signup-btn" style="cursor: pointer;">회원가입</a>
                 <span id="user-info" style="display:none"></span>
                 <a id="logout-btn" style="cursor: pointer; display:none">로그아웃</a>
+                <a id="delete-account-btn" style="cursor: pointer; display:none; color: #ff6b6b;">회원탈퇴</a>
             </div>
         </div>
 
@@ -153,6 +154,34 @@
             </form>
         </div>
     </div>
+
+    <!-- 회원탈퇴 전용 모달 -->
+    <div id="delete-auth-modal" style="display: none; position: fixed; top: 0; left: 0; 
+         width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; 
+         align-items: center; justify-content: center;">
+        <div style="background: #161838; border: 1px solid #ff6b6b; border-radius: 16px; 
+             padding: 30px; width: 400px; max-width: 90%;">
+            <h2 style="margin-bottom: 10px; text-align: center; color: #ff6b6b;">❗ 회원탈퇴</h2>
+            <p style="text-align: center; font-size: 14px; margin-bottom: 20px; color: #ff9e9e;">
+                모든 데이터(운세 기록, 개인정보)가 영구적으로 삭제되며 복구할 수 없습니다.
+            </p>
+            <form id="delete-auth-form">
+                <input type="password" id="delete-auth-password" placeholder="비밀번호 확인" required style="width: 100%; padding: 12px; margin-bottom: 12px; 
+                       border-radius: 10px; border: none; background: #1F2352;">
+                <div style="display: flex; gap: 10px; margin-top: 16px;">
+                    <button type="submit" style="flex: 1; padding: 12px; border-radius: 10px; 
+                            border: none; background: #ff6b6b; color: white; cursor: pointer; 
+                            font-weight: 500;">탈퇴하기</button>
+                    <button type="button" id="delete-auth-cancel" style="flex: 1; padding: 12px; 
+                            border-radius: 10px; border: none; background: #2B2F6F; 
+                            cursor: pointer;">취소</button>
+                </div>
+                <div id="delete-auth-message" style="margin-top: 12px; font-size: 13px; 
+                     text-align: center;"></div>
+            </form>
+        </div>
+    </div>
+
     <!-- 하단 저작권 -->
     <footer class="site-footer">
         <p>© 2026 Kalpha-Dev (최재영). All Rights Reserved.</p>
