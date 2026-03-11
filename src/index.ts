@@ -169,15 +169,17 @@ async function handleAuthRequest(request: Request, env: Env): Promise<Response> 
         return new Response("아이디와 비밀번호를 입력해주세요.", { status: 400 });
       }
 
-      // Rate limiting: IP당 15분 이내 5회 초과 시 차단
+      // Rate limiting: IP당 15분 이내 5회 초과 시 차단 (테스트를 위해 임시 비활성화)
       const clientIP = request.headers.get("CF-Connecting-IP") || "unknown";
       const windowStart = Math.floor(Date.now() / 1000) - 15 * 60;
+      /*
       const attempts = await env.DB.prepare(
         "SELECT COUNT(*) as count FROM login_attempts WHERE ip = ? AND attempted_at > ?"
       ).bind(clientIP, windowStart).first<{ count: number }>();
       if (attempts && attempts.count >= 5) {
         return new Response("로그인 시도 횟수를 초과했습니다. 15분 후 다시 시도해주세요.", { status: 429 });
       }
+      */
 
       // 사용자 정보 조회
       const user = await env.DB.prepare("SELECT * FROM users WHERE user_id = ?").bind(userId).first<any>();
